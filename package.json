@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "npm run prepare-models && vite build",
     "preview": "vite preview",
     "test:e2e": "cypress run",
     "test:unit": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prepare-models": "node scripts/prepare-models.js"
   },
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
