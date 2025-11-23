@@ -215,7 +215,7 @@ const getReadingLevelName = (level) => {
 
 const getTestRequirements = () => {
   return {
-    'cvc': { requiredLevel: 2, name: 'CVC Test' },
+    'cvc': { requiredLevel: 1, name: 'CVC Test' },
     'phonics-merger': { requiredLevel: 2, name: 'Phonics Merger Test' },
     'blending': { requiredLevel: 3, name: 'Blending Test' },
     'silent-words': { requiredLevel: 4, name: 'Silent Words Test' },
@@ -371,10 +371,14 @@ const fetchClassroomReadingLevels = async () => {
 const updateAvailableCategories = (maxLevel) => {
   const categories = [];
   
+  // CVC Test is available even for non-readers (level 1)
+  categories.push(
+    { value: 'cvc', label: 'CVC Test', disabled: false }
+  );
+  
   // Add categories based on highest reading level in classroom
   if (maxLevel >= 2) {
     categories.push(
-      { value: 'cvc', label: 'CVC Test', disabled: false },
       { value: 'phonics-merger', label: 'Phonics Merger Test', disabled: false }
     );
   }
@@ -395,7 +399,6 @@ const updateAvailableCategories = (maxLevel) => {
   // Add disabled options to show what's not available
   if (maxLevel < 2) {
     categories.push(
-      { value: 'cvc', label: 'CVC Test', disabled: true },
       { value: 'phonics-merger', label: 'Phonics Merger Test', disabled: true },
       { value: 'blending', label: 'Blending Test', disabled: true },
       { value: 'silent-words', label: 'Silent Words Test', disabled: true },
