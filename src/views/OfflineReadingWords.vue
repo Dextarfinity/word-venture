@@ -319,6 +319,7 @@ const isListening = ref(false);
 const wordsSelected = ref(false);
 const isGenerating = ref(false);
 const speechSystemReady = ref(false);
+const isWordCooldown = ref(false); // Cooldown state for 2 second pause
 const isNativePlatform = Capacitor.isNativePlatform();
 
 // Offline speech recognition variables
@@ -1026,6 +1027,12 @@ const toggleListening = async () => {
 
 // Word checking with more flexible matching for individual words
 const checkWord = (spokenText) => {
+  // Skip if in cooldown period to prevent rapid successive checks
+  if (isWordCooldown.value) {
+    console.log("⏸️ Cooldown active - ignoring spoken text");
+    return;
+  }
+
   const currentWord = getCurrentWord();
   if (!currentWord) return;
 
@@ -1051,18 +1058,22 @@ const checkWord = (spokenText) => {
   if (isMatch) {
     console.log(`✅ Word match! "${spoken}" → "${expected}"`);
     currentWord.status = "correct";
+    isWordCooldown.value = true; // Start cooldown
 
-    // Brief pause before moving to next word
+    // 2 second cooldown before moving to next word
     setTimeout(() => {
+      isWordCooldown.value = false;
       stopListening();
-    }, 1000);
+    }, 2000);
   } else {
     console.log(`❌ No match: "${spoken}" vs "${expected}"`);
     currentWord.status = "incorrect";
+    isWordCooldown.value = true; // Start cooldown
 
-    // Allow retry after brief pause
+    // 2 second cooldown to allow retry
     setTimeout(() => {
       currentWord.status = null;
+      isWordCooldown.value = false;
       stopListening();
     }, 2000);
   }
@@ -1181,6 +1192,28 @@ const stopNativeSpeechRecognition = async () => {
     console.log("🛑 Stopped native speech recognition");
   } catch (error) {
     console.error("❌ Error stopping native speech recognition:", error);
+  }
+};
+
+// Stop listening for word recognition (does NOT stop background music)
+const stopListening = async () => {
+  try {
+    if (isNativePlatform) {
+      // Stop native recognition
+      if (isListening.value) {
+        await stopNativeSpeechRecognition();
+      }
+    } else {
+      // Stop Web Speech API or Vosk
+      if (recognition && recognition.stop) {
+        recognition.stop();
+      }
+      // Vosk is handled by the recognizer object - it continues listening automatically
+      // and will emit results when available
+    }
+    console.log("🎤 Speech recognition stopped (music continues playing)");
+  } catch (error) {
+    console.error("❌ Error stopping speech recognition:", error);
   }
 };
 
