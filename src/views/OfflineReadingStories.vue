@@ -536,6 +536,14 @@ const initWebSpeechAPI = async () => {
 
 // Vosk offline speech recognition initialization
 const initVoskOfflineRecognition = async () => {
+  // Check if user wants to skip Vosk (for debugging)
+  const skipVosk = new URLSearchParams(window.location.search).get('skipVosk') === 'true';
+  if (skipVosk) {
+    console.log("⏭️ Skipping Vosk (skipVosk=true), using Web Speech API directly");
+    await initWebSpeechAPI();
+    return;
+  }
+  
   try {
     console.log("🎤 Initializing Vosk offline recognition for stories");
 
@@ -591,24 +599,41 @@ const initVoskOfflineRecognition = async () => {
     console.log("🔧 Loading Vosk model...");
 
     // Try different model paths - vosk-browser needs .tar.gz files
+    // Note: The tar.gz file must be a valid gzip-compressed tar archive
+    // If model loading fails, we'll automatically fall back to Web Speech API
     const modelPaths = [
       "/models/vosk-model-small-en-us-0.15.tar.gz",
     ];
+    
+    console.log("📋 Model paths to try:", modelPaths);
+    console.log("⚠️ If Vosk fails, will automatically use Web Speech API");
 
     let modelLoaded = false;
     let model = null;
 
     for (const modelPath of modelPaths) {
       try {
-        console.log(`� Trying to load model from: ${modelPath}`);
+        console.log(`🔄 Trying to load model from: ${modelPath}`);
+        console.log(`📡 Full URL: ${window.location.origin}${modelPath}`);
 
         // Try to create model with the global vosk
         if (vosk.createModel) {
-          model = await vosk.createModel(modelPath);
+          console.log("🔧 Using vosk.createModel() method");
+          console.log("⏳ Starting model download and extraction...");
+          console.log("   This may take 10-30 seconds for 41MB file");
+          
+          const modelPromise = vosk.createModel(modelPath);
+          console.log("📦 Model promise created, waiting for load event...");
+          
+          model = await modelPromise;
+          console.log("✅ Model created successfully:", model);
         } else if (vosk.Model) {
+          console.log("🔧 Using new vosk.Model() constructor");
           model = new vosk.Model(modelPath);
+          console.log("✅ Model created successfully:", model);
         } else {
           console.error("❌ No model creation method found in Vosk");
+          console.error("Available methods:", Object.keys(vosk));
           continue;
         }
 
@@ -825,12 +850,8 @@ const initVoskOfflineRecognition = async () => {
   } catch (error) {
     console.error("🚫 Vosk word recognition initialization failed:", error);
     console.error("Error details:", error.stack);
-    speechSystemReady.value = false;
-
-    // Show user-friendly error
-    alert(
-      "Voice recognition is not available. You can still read the stories by clicking on words or using the navigation."
-    );
+    console.log("🔄 Falling back to Web Speech API due to Vosk error");
+    await initWebSpeechAPI();
   }
 };
 

@@ -602,6 +602,14 @@ const initWebSpeechAPI = async () => {
 
 // Initialize Vosk offline recognition (copied from WordReadingPage.vue)
 const initVoskOfflineRecognition = async () => {
+  // Check if user wants to skip Vosk (for debugging)
+  const skipVosk = new URLSearchParams(window.location.search).get('skipVosk') === 'true';
+  if (skipVosk) {
+    console.log("⏭️ Skipping Vosk (skipVosk=true), using Web Speech API directly");
+    await initWebSpeechAPI();
+    return;
+  }
+  
   try {
     console.log("🎤 Initializing Vosk offline recognition");
 
@@ -679,15 +687,21 @@ const initVoskOfflineRecognition = async () => {
     for (const modelPath of modelPaths) {
       try {
         console.log(`🔄 Trying to load model: ${modelPath}`);
+        console.log(`📡 Full URL: ${window.location.origin}${modelPath}`);
 
         // Try to create model with the global vosk
         let model = null;
         if (vosk.createModel) {
+          console.log("🔧 Using vosk.createModel() method");
           model = await vosk.createModel(modelPath);
+          console.log("✅ Model created successfully:", model);
         } else if (vosk.Model) {
+          console.log("🔧 Using new vosk.Model() constructor");
           model = new vosk.Model(modelPath);
+          console.log("✅ Model created successfully:", model);
         } else {
           console.error("❌ No model creation method found in Vosk");
+          console.error("Available methods:", Object.keys(vosk));
           continue;
         }
 
@@ -942,12 +956,8 @@ const initVoskOfflineRecognition = async () => {
   } catch (error) {
     console.error("🚫 Vosk word recognition initialization failed:", error);
     console.error("Error details:", error.stack);
-    speechSystemReady.value = false;
-
-    // Show user-friendly error
-    alert(
-      "Voice recognition is not available. You can still practice by looking at the words and using the navigation buttons."
-    );
+    console.log("🔄 Falling back to Web Speech API due to Vosk error");
+    await initWebSpeechAPI();
   }
 };
 
