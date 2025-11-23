@@ -141,33 +141,6 @@
               </select>
             </div>
 
-            <!-- Excel Export Section -->
-            <div v-if="selectedClassroomId" class="export-section">
-              <div class="export-controls">
-                <label class="selector-label">Export Month:</label>
-                <select v-model="selectedExportMonth" class="month-dropdown">
-                  <option
-                    v-for="month in availableMonths"
-                    :key="month.value"
-                    :value="month.value"
-                  >
-                    {{ month.label }}
-                  </option>
-                </select>
-                <button
-                  class="export-btn"
-                  @click="
-                    playClick('teacher');
-                    exportMonthlyProgress();
-                  "
-                  :disabled="isExporting || !selectedClassroomId"
-                >
-                  <ion-icon :icon="downloadOutline" class="export-icon"></ion-icon>
-                  {{ isExporting ? "Exporting..." : "Download Excel" }}
-                </button>
-              </div>
-            </div>
-
             <!-- Selected Classroom Analytics Card -->
             <div v-if="selectedClassroomId" class="classroom-analytics-card">
               <div class="classroom-header">
@@ -575,9 +548,7 @@ const classroomMonthlyData = ref({});
 const isLoadingMonthly = ref(false);
 
 // Excel export state
-const isExporting = ref(false);
-const selectedExportMonth = ref("");
-const availableMonths = ref([]);
+
 
 // Computed property for selected classroom details
 const selectedClassroom = computed(() => {

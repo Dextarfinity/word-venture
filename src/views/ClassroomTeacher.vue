@@ -71,19 +71,33 @@
             </div>
           </div>
 
-          <!-- Export Progress Button -->
+          <!-- Export Progress Section -->
           <div class="export-section">
-            <button
-              class="export-btn"
-              @click="
-                playClick('teacher');
-                exportClassProgress();
-              "
-              :disabled="loading"
-            >
-              <ion-icon :icon="downloadOutline" class="export-icon"></ion-icon>
-              Export Class Progress
-            </button>
+            <div class="export-controls">
+              <div class="month-selector">
+                <label class="selector-label">Export Month:</label>
+                <select v-model="selectedExportMonth" class="month-dropdown">
+                  <option
+                    v-for="month in availableMonths"
+                    :key="month.value"
+                    :value="month.value"
+                  >
+                    {{ month.label }}
+                  </option>
+                </select>
+              </div>
+              <button
+                class="export-btn"
+                @click="
+                  playClick('teacher');
+                  exportMonthlyProgress();
+                "
+                :disabled="loading || isExporting"
+              >
+                <ion-icon :icon="downloadOutline" class="export-icon"></ion-icon>
+                {{ isExporting ? "Exporting..." : "Download Excel" }}
+              </button>
+            </div>
           </div>
 
           <!-- Tasks Section -->
@@ -361,6 +375,11 @@ const showClassInfoModal = ref(false);
 const showNewTaskModal = ref(false);
 const showNewAnnouncementModal = ref(false);
 
+// Export functionality
+const selectedExportMonth = ref("");
+const isExporting = ref(false);
+const availableMonths = ref([]);
+
 // Get classroom ID from route params
 const classroomId = computed(() => route.params.id);
 
@@ -637,23 +656,54 @@ const deleteAnnouncement = async (announcementId) => {
   }
 };
 
-// Export class progress to Excel
-const exportClassProgress = async () => {
+// Generate available months for export
+const generateAvailableMonths = () => {
+  const months = [];
+  const currentDate = new Date();
+  
+  // Generate last 6 months including current month
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const monthName = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    
+    months.push({
+      value: `${year}-${month.toString().padStart(2, '0')}`,
+      label: monthName
+    });
+  }
+  
+  availableMonths.value = months;
+  if (months.length > 0) {
+    selectedExportMonth.value = months[months.length - 1].value; // Default to current month
+  }
+};
+
+// Export monthly progress to Excel
+const exportMonthlyProgress = async () => {
   try {
-    console.log("📊 Starting export of classroom progress for class:", classroomId.value);
+    isExporting.value = true;
+    console.log("📊 Starting monthly export for classroom:", classroomId.value);
 
     if (!classroomId.value) {
-      console.error("❌ No classroom ID found");
-      if (window.$toast) {
-        window.$toast.error("Unable to export: Classroom not found");
-      }
+      window.$toast?.error("Unable to export: Classroom not found");
       return;
     }
 
-    // Show loading toast
-    if (window.$toast) {
-      window.$toast.info("Generating Excel file...");
+    if (!selectedExportMonth.value) {
+      window.$toast?.error("Please select a month to export");
+      return;
     }
+
+    // Parse selected month
+    const [year, monthStr] = selectedExportMonth.value.split("-");
+    const month = parseInt(monthStr);
+    const selectedMonthData = availableMonths.value.find(
+      (m) => m.value === selectedExportMonth.value
+    );
+
+    window.$toast?.info("Generating Excel file...");
 
     // Get all students in this classroom
     const { data: classroomStudents, error: studentsError } = await supabase
@@ -690,6 +740,10 @@ const exportClassProgress = async () => {
     console.log("📝 Unique students:", studentUserIds.length);
     console.log("🔍 Student UUIDs to query:", studentUserIds);
 
+    // Calculate date range for the selected month
+    const startDate = new Date(parseInt(year), month - 1, 1);
+    const endDate = new Date(parseInt(year), month, 0, 23, 59, 59);
+
     // Fetch analytics data for all students in this classroom
     const { data: analyticsData, error: analyticsError } = await supabase
       .from("student_reading_analytics")
@@ -715,10 +769,13 @@ const exportClassProgress = async () => {
         sight_words_read,
         other_words_read,
         student_name,
-        student_id_number
+        student_id_number,
+        session_date
       `
       )
-      .in("user_id", studentUserIds);
+      .in("user_id", studentUserIds)
+      .gte("session_date", startDate.toISOString())
+      .lte("session_date", endDate.toISOString());
 
     if (analyticsError) {
       console.error("❌ Error fetching analytics:", analyticsError);
@@ -878,14 +935,16 @@ const exportClassProgress = async () => {
 
     if (window.$toast) {
       window.$toast.success(
-        `Class progress exported successfully! (${exportData.length} records)`
+        `Exported ${exportData.length} records for ${selectedMonthData?.label}`
       );
     }
   } catch (error) {
-    console.error("❌ Error exporting class progress:", error);
+    console.error("❌ Error exporting monthly progress:", error);
     if (window.$toast) {
       window.$toast.error("Failed to export progress. Please try again.");
     }
+  } finally {
+    isExporting.value = false;
   }
 };
 
@@ -896,6 +955,7 @@ onMounted(async () => {
   startMusic(MUSIC_TYPES.LOBBY, 0.3);
 
   await initializeClassroomData();
+  generateAvailableMonths();
 });
 
 onBeforeUnmount(() => {
@@ -1102,6 +1162,39 @@ onBeforeUnmount(() => {
   margin-bottom: 24px;
   display: flex;
   justify-content: center;
+}
+
+.export-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  max-width: 400px;
+  width: 100%;
+}
+
+.month-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.selector-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.month-dropdown {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  background: white;
+  min-width: 200px;
+  text-align: center;
 }
 
 .export-btn {
