@@ -252,6 +252,7 @@ const pendingRepetitions = ref([]);
 // Platform detection
 const isNativePlatform = Capacitor.isNativePlatform();
 let speechSystemReady = ref(false);
+const activeRecognitionSystem = ref(null); // Track which system is active: 'native' or 'webspeech'
 let audioContext = null;
 let scriptProcessor = null;
 let mediaStream = null;
@@ -418,6 +419,7 @@ const initNativeSpeechRecognition = () => {
       if (speechRecognition === 'granted') {
         console.log('✅ Speech recognition permission granted');
         speechSystemReady.value = true;
+        activeRecognitionSystem.value = 'native';
       } else {
         console.log('⚠️ Speech recognition permission not granted, will request on use');
       }
@@ -472,6 +474,7 @@ const initWebSpeechAPI = () => {
     };
 
     speechSystemReady.value = true;
+    activeRecognitionSystem.value = 'webspeech';
     console.log("✅ Web Speech API initialized successfully");
   } catch (error) {
     console.error("❌ Failed to initialize Web Speech API:", error);

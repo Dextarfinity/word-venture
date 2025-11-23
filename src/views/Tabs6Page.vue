@@ -747,24 +747,15 @@ const initSpeech = async () => {
   console.log("🎤 Initializing speech recognition with fallback chain...");
 
   if (isNativePlatform) {
-    console.log("📱 Native platform detected - trying Capacitor Speech Recognition");
+    console.log("📱 Native platform detected - using Capacitor Speech Recognition");
     await initNativeSpeechRecognition();
     if (!speechSystemReady.value) {
-      console.log("⚠️ Native speech recognition failed, trying Vosk fallback");
-      await initVoskFallback();
-    }
-    if (!speechSystemReady.value) {
-      console.log("⚠️ Vosk fallback failed, trying Web Speech API");
+      console.log("⚠️ Native speech recognition failed, trying Web Speech API fallback");
       await initWebSpeechFallback();
     }
   } else {
-    console.log("💻 Web platform detected - trying Vosk then Web Speech API");
-    // Try Vosk first for offline capability
-    await initVoskFallback();
-    if (!speechSystemReady.value) {
-      console.log("⚠️ Vosk initialization failed, trying Web Speech API");
-      await initWebSpeechFallback();
-    }
+    console.log("💻 Web platform detected - trying Web Speech API");
+    await initWebSpeechFallback();
   }
 
   if (!speechSystemReady.value) {
@@ -775,19 +766,19 @@ const initSpeech = async () => {
 // Native speech recognition initialization for mobile
 const initNativeSpeechRecognition = async () => {
   try {
-    console.log("🎤 Initializing native (Capacitor) speech recognition");
+    console.log("🎤 Initializing native speech recognition");
 
     // Check if speech recognition is available
     const available = await SpeechRecognition.available();
     if (!available) {
-      console.warn("⚠️ Speech recognition not available on this device");
+      console.error("❌ Speech recognition not available on this device");
       return;
     }
 
     // Request permissions
     const { granted } = await SpeechRecognition.requestPermissions();
     if (!granted) {
-      console.warn("⚠️ Speech recognition permissions not granted");
+      console.error("❌ Speech recognition permissions not granted");
       return;
     }
 
@@ -795,7 +786,7 @@ const initNativeSpeechRecognition = async () => {
     activeRecognitionSystem.value = 'native';
     console.log("✅ Native speech recognition ready (Capacitor)");
   } catch (error) {
-    console.warn("⚠️ Native speech recognition initialization failed:", error);
+    console.error("❌ Native speech recognition initialization failed:", error);
     speechSystemReady.value = false;
   }
 };
