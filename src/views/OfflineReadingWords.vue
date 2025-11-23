@@ -320,6 +320,7 @@ const wordsSelected = ref(false);
 const isGenerating = ref(false);
 const speechSystemReady = ref(false);
 const isWordCooldown = ref(false); // Cooldown state for 2 second pause
+const activeRecognitionSystem = ref(null); // Track which system is active: 'native', 'vosk', or 'webspeech'
 const isNativePlatform = Capacitor.isNativePlatform();
 
 // Offline speech recognition variables
@@ -517,13 +518,22 @@ onMounted(async () => {
     console.error("❌ Error pre-loading words:", error);
   }
 
-  // Initialize speech recognition based on platform
+  // Initialize speech recognition based on platform with fallback chain
   if (isNativePlatform) {
     console.log("📱 Native platform detected - using Capacitor Speech Recognition");
     await initNativeSpeechRecognition();
+    if (!speechSystemReady.value) {
+      console.log("⚠️ Native speech recognition failed, trying Web Speech API fallback");
+      await initWebSpeechAPI();
+    }
   } else {
-    console.log("💻 Web platform detected - using Vosk offline recognition");
+    console.log("💻 Web platform detected - trying multiple speech recognition methods");
+    // Try Vosk first, then Web Speech API as fallback
     await initVoskOfflineRecognition();
+    if (!speechSystemReady.value) {
+      console.log("⚠️ Vosk initialization failed, trying Web Speech API fallback");
+      await initWebSpeechAPI();
+    }
   }
 });
 
@@ -552,23 +562,23 @@ const initNativeSpeechRecognition = async () => {
     }
 
     speechSystemReady.value = true;
-    console.log("✅ Native speech recognition ready");
+    activeRecognitionSystem.value = 'native';
+    console.log("✅ Native speech recognition ready (Capacitor)");
   } catch (error) {
     console.error("❌ Native speech recognition initialization failed:", error);
     speechSystemReady.value = false;
   }
 };
 
-// Web Speech API fallback
+// Web Speech API fallback with enhanced error handling
 const initWebSpeechAPI = async () => {
   try {
-    console.log("🎤 Initializing Web Speech API as fallback");
+    console.log("🎤 Initializing Web Speech API");
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      console.error("❌ Web Speech API not available");
-      alert("Speech recognition is not available in this browser.");
-      return;
+      console.warn("⚠️ Web Speech API not available in this browser");
+      return false;
     }
 
     recognition = new SpeechRecognition();
@@ -576,28 +586,45 @@ const initWebSpeechAPI = async () => {
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
+    recognition.onstart = () => {
+      console.log("🎤 Web Speech API listening started");
+    };
+
     recognition.onresult = (event) => {
       const result = event.results[event.results.length - 1];
       const transcript = result[0].transcript;
-      console.log(`🎤 Web Speech: "${transcript}"`);
+      console.log(`🎤 Web Speech result: "${transcript}"`);
       checkWord(transcript);
     };
 
     recognition.onerror = (event) => {
-      console.error("🎤 Web Speech error:", event.error);
-    };
-
-    recognition.onend = () => {
-      if (isListening.value) {
-        recognition.start();
+      console.warn("⚠️ Web Speech API error:", event.error);
+      // Don't stop listening on error - let the user try again
+      if (event.error === 'network') {
+        console.log("📡 Network error - speech recognition may not work offline");
       }
     };
 
-    console.log("✅ Web Speech API ready");
+    recognition.onend = () => {
+      console.log("🎤 Web Speech API listening ended");
+      if (isListening.value && !isWordCooldown.value) {
+        // Automatically restart if still listening and not in cooldown
+        console.log("🔄 Restarting Web Speech API");
+        setTimeout(() => {
+          if (isListening.value && !isWordCooldown.value) {
+            recognition.start();
+          }
+        }, 100);
+      }
+    };
+
+    console.log("✅ Web Speech API initialized successfully");
     speechSystemReady.value = true;
+    activeRecognitionSystem.value = 'webspeech';
+    return true;
   } catch (error) {
     console.error("❌ Failed to initialize Web Speech API:", error);
-    alert("Failed to initialize voice recognition. " + error.message);
+    return false;
   }
 };
 
@@ -961,6 +988,7 @@ const initVoskOfflineRecognition = async () => {
     }
 
     speechSystemReady.value = true;
+    activeRecognitionSystem.value = 'vosk';
     console.log("✅ Vosk offline word recognition ready");
     console.log("🎯 Starting reading with Vosk offline mode");
   } catch (error) {
