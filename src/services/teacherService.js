@@ -246,6 +246,86 @@ class TeacherService {
   }
 
   /**
+   * Search students by name or user ID
+   */
+  static async searchStudents(searchQuery) {
+    try {
+      console.log('🔍 Searching students with query:', searchQuery);
+
+      if (!searchQuery || searchQuery.trim().length < 2) {
+        return { success: true, data: [] };
+      }
+
+      const query = searchQuery.trim().toLowerCase();
+
+      // Search in profiles table using multiple fields
+      const { data: searchResults, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, email, avatar_url, grade_level, user_type, is_active, user_id')
+        .eq('user_type', 'student')
+        .eq('is_active', true)
+        .or(`full_name.ilike.%${query}%,email.ilike.%${query}%,user_id.ilike.%${query}%`)
+        .order('full_name', { ascending: true })
+        .limit(20); // Limit to prevent too many results
+
+      if (error) {
+        throw error;
+      }
+
+      if (!searchResults || searchResults.length === 0) {
+        console.log('No students found matching search query');
+        return { success: true, data: [] };
+      }
+
+      // Get reading level data for found students
+      const studentIds = searchResults.map(p => p.id);
+      const { data: userStats, error: statsError } = await supabase
+        .from('user_stats')
+        .select('user_id, current_reading_level')
+        .in('user_id', studentIds);
+
+      if (statsError) {
+        console.warn('Error fetching user stats for search results:', statsError);
+      }
+
+      // Helper function to get reading level name
+      const getReadingLevelName = (level) => {
+        const levelMap = {
+          1: 'Non-Reader',
+          2: 'Frustration', 
+          3: 'Instructional',
+          4: 'Independent'
+        };
+        return levelMap[level] || 'Non-Reader';
+      };
+
+      // Map search results with reading level data
+      const studentsWithLevels = searchResults.map(student => {
+        const stats = userStats?.find(s => s.user_id === student.id);
+        
+        return {
+          id: student.id,
+          name: student.full_name || 'Unknown Student',
+          email: student.email,
+          avatar: student.avatar_url,
+          gradeLevel: student.grade_level,
+          userType: student.user_type,
+          isActive: student.is_active,
+          user_id: student.user_id,
+          current_reading_level: stats?.current_reading_level || 1,
+          level_name: getReadingLevelName(stats?.current_reading_level || 1)
+        };
+      });
+
+      console.log(`✅ Found ${studentsWithLevels.length} students matching "${searchQuery}"`);
+      return { success: true, data: studentsWithLevels };
+    } catch (error) {
+      console.error('Error searching students:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * Get students enrolled in a specific classroom with reading levels
    */
   static async getClassroomStudents(classroomId, teacherId) {

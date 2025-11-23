@@ -744,139 +744,150 @@ const exportMonthlyProgress = async () => {
     const startDate = new Date(parseInt(year), month - 1, 1);
     const endDate = new Date(parseInt(year), month, 0, 23, 59, 59);
 
-    // Fetch analytics data for all students in this classroom
-    const { data: analyticsData, error: analyticsError } = await supabase
-      .from("student_reading_analytics")
+    // Fetch phonics progress data for all students
+    const { data: phonicsData, error: phonicsError } = await supabase
+      .from("user_phonics_progress")
       .select(
         `
         user_id,
-        content_type,
-        words_read,
-        accuracy_percentage,
-        total_miscues,
-        mispronunciation_miscues,
-        substitution_miscues,
-        omission_miscues,
-        insertion_miscues,
-        repetition_miscues,
-        self_correction_miscues,
-        reversal_miscues,
-        transposition_miscues,
         cvc_words_read,
         blending_words_read,
         silent_letter_words_read,
         phonics_merger_words_read,
         sight_words_read,
         other_words_read,
-        student_name,
-        student_id_number,
-        session_date
+        total_words_read,
+        total_correct_words,
+        total_miscues,
+        cvc_accuracy,
+        blending_accuracy,
+        silent_letter_accuracy,
+        phonics_merger_accuracy,
+        sight_words_accuracy,
+        last_updated
+      `
+      )
+      .in("user_id", studentUserIds);
+
+    if (phonicsError) {
+      console.error("❌ Error fetching phonics progress:", phonicsError);
+      throw phonicsError;
+    }
+
+    console.log("📊 Phonics progress data fetched:", phonicsData?.length || 0, "records");
+
+    // Fetch miscue summary data for the selected month
+    const { data: miscueData, error: miscueError } = await supabase
+      .from("miscue_summary_by_session")
+      .select(
+        `
+        user_id,
+        reading_session_id,
+        total_miscues,
+        mispronunciations,
+        omissions,
+        substitutions,
+        insertions,
+        repetitions,
+        transpositions,
+        reversals,
+        self_corrections,
+        meaning_maintained_count,
+        meaning_maintained_percentage,
+        created_at
       `
       )
       .in("user_id", studentUserIds)
-      .gte("session_date", startDate.toISOString())
-      .lte("session_date", endDate.toISOString());
+      .gte("created_at", startDate.toISOString())
+      .lte("created_at", endDate.toISOString());
 
-    if (analyticsError) {
-      console.error("❌ Error fetching analytics:", analyticsError);
-      throw analyticsError;
+    if (miscueError) {
+      console.error("❌ Error fetching miscue summary:", miscueError);
+      throw miscueError;
     }
 
-    console.log("📊 Analytics data fetched:", analyticsData?.length || 0, "sessions");
+    console.log("📊 Miscue summary data fetched:", miscueData?.length || 0, "records");
 
-    // Group data by student and content_type
-    const studentProgressMap = {};
-
-    analyticsData?.forEach((session) => {
-      const key = `${session.user_id}_${session.content_type}`;
-
-      if (!studentProgressMap[key]) {
-        studentProgressMap[key] = {
-          student_name: session.student_name,
-          student_id: session.student_id_number,
-          content_type:
-            session.content_type === "word" ? "Word Reading" : "Story Reading",
-          total_words_read: 0,
-          total_sessions: 0,
-          total_miscues: 0,
-          mispronunciation_miscues: 0,
-          substitution_miscues: 0,
-          omission_miscues: 0,
-          insertion_miscues: 0,
-          repetition_miscues: 0,
-          self_correction_miscues: 0,
-          reversal_miscues: 0,
-          transposition_miscues: 0,
-          cvc_words_read: 0,
-          blending_words_read: 0,
-          silent_letter_words_read: 0,
-          phonics_merger_words_read: 0,
-          sight_words_read: 0,
-          other_words_read: 0,
-          total_accuracy: 0,
-          accuracy_count: 0,
-        };
-      }
-
-      // Aggregate the data
-      const record = studentProgressMap[key];
-      record.total_words_read += session.words_read || 0;
-      record.total_sessions += 1;
-      record.total_miscues += session.total_miscues || 0;
-      record.mispronunciation_miscues += session.mispronunciation_miscues || 0;
-      record.substitution_miscues += session.substitution_miscues || 0;
-      record.omission_miscues += session.omission_miscues || 0;
-      record.insertion_miscues += session.insertion_miscues || 0;
-      record.repetition_miscues += session.repetition_miscues || 0;
-      record.self_correction_miscues += session.self_correction_miscues || 0;
-      record.reversal_miscues += session.reversal_miscues || 0;
-      record.transposition_miscues += session.transposition_miscues || 0;
-      record.cvc_words_read += session.cvc_words_read || 0;
-      record.blending_words_read += session.blending_words_read || 0;
-      record.silent_letter_words_read += session.silent_letter_words_read || 0;
-      record.phonics_merger_words_read += session.phonics_merger_words_read || 0;
-      record.sight_words_read += session.sight_words_read || 0;
-      record.other_words_read += session.other_words_read || 0;
-
-      if (session.accuracy_percentage) {
-        record.total_accuracy += session.accuracy_percentage;
-        record.accuracy_count += 1;
-      }
+    // Create a map of phonics progress data by user_id
+    const phonicsMap = {};
+    phonicsData?.forEach((record) => {
+      phonicsMap[record.user_id] = record;
     });
 
-    // Convert to array and calculate averages
-    const exportData = Object.values(studentProgressMap).map((record) => ({
-      "Student Name": record.student_name,
-      "Student ID": record.student_id,
-      "Activity Type": record.content_type,
-      "Total Sessions": record.total_sessions,
-      "Total Words Read": record.total_words_read,
-      "Average Accuracy (%)":
-        record.accuracy_count > 0
-          ? (record.total_accuracy / record.accuracy_count).toFixed(2)
-          : "0.00",
-      "Total Miscues": record.total_miscues,
-      Mispronunciation: record.mispronunciation_miscues,
-      Substitution: record.substitution_miscues,
-      Omission: record.omission_miscues,
-      Insertion: record.insertion_miscues,
-      Repetition: record.repetition_miscues,
-      "Self Correction": record.self_correction_miscues,
-      Reversal: record.reversal_miscues,
-      Transposition: record.transposition_miscues,
-      "CVC Words": record.cvc_words_read,
-      "Blending Words": record.blending_words_read,
-      "Silent Letter Words": record.silent_letter_words_read,
-      "Phonics Merger Words": record.phonics_merger_words_read,
-      "Sight Words": record.sight_words_read,
-      "Other Words": record.other_words_read,
-    }));
+    // Aggregate miscue data by user
+    const miscueMap = {};
+    miscueData?.forEach((record) => {
+      if (!miscueMap[record.user_id]) {
+        miscueMap[record.user_id] = {
+          total_miscues: 0,
+          mispronunciations: 0,
+          omissions: 0,
+          substitutions: 0,
+          insertions: 0,
+          repetitions: 0,
+          transpositions: 0,
+          reversals: 0,
+          self_corrections: 0,
+          meaning_maintained_count: 0,
+          total_sessions: 0,
+        };
+      }
+      const m = miscueMap[record.user_id];
+      m.total_miscues += record.total_miscues || 0;
+      m.mispronunciations += record.mispronunciations || 0;
+      m.omissions += record.omissions || 0;
+      m.substitutions += record.substitutions || 0;
+      m.insertions += record.insertions || 0;
+      m.repetitions += record.repetitions || 0;
+      m.transpositions += record.transpositions || 0;
+      m.reversals += record.reversals || 0;
+      m.self_corrections += record.self_corrections || 0;
+      m.meaning_maintained_count += record.meaning_maintained_count || 0;
+      m.total_sessions += 1;
+    });
 
-    // Sort by student name, then by content type
+    // Build export data combining phonics and miscue data
+    const exportData = classroomStudents.map((cs) => {
+      const userId = cs.profiles.id;
+      const phonics = phonicsMap[userId] || {};
+      const miscues = miscueMap[userId] || {};
+      const student = cs.profiles;
+
+      return {
+        "Student Name": student.full_name || "Unknown",
+        "Student ID": student.user_id || "N/A",
+        // Phonics Progress Data
+        "CVC Words Read": phonics.cvc_words_read || 0,
+        "Blending Words Read": phonics.blending_words_read || 0,
+        "Silent Letter Words Read": phonics.silent_letter_words_read || 0,
+        "Phonics Merger Words Read": phonics.phonics_merger_words_read || 0,
+        "Sight Words Read": phonics.sight_words_read || 0,
+        "Other Words Read": phonics.other_words_read || 0,
+        "Total Words Read": phonics.total_words_read || 0,
+        "Correct Words": phonics.total_correct_words || 0,
+        "CVC Accuracy %": phonics.cvc_accuracy || 0,
+        "Blending Accuracy %": phonics.blending_accuracy || 0,
+        "Silent Letter Accuracy %": phonics.silent_letter_accuracy || 0,
+        "Phonics Merger Accuracy %": phonics.phonics_merger_accuracy || 0,
+        "Sight Words Accuracy %": phonics.sight_words_accuracy || 0,
+        // Miscue Summary Data
+        "Total Miscues": miscues.total_miscues || 0,
+        "Mispronunciations": miscues.mispronunciations || 0,
+        "Omissions": miscues.omissions || 0,
+        "Substitutions": miscues.substitutions || 0,
+        "Insertions": miscues.insertions || 0,
+        "Repetitions": miscues.repetitions || 0,
+        "Transpositions": miscues.transpositions || 0,
+        "Reversals": miscues.reversals || 0,
+        "Self Corrections": miscues.self_corrections || 0,
+        "Meaning Maintained Count": miscues.meaning_maintained_count || 0,
+        "Sessions Count": miscues.total_sessions || 0,
+      };
+    });
+
+    // Sort by student name
     exportData.sort((a, b) => {
-      const nameCompare = a["Student Name"].localeCompare(b["Student Name"]);
-      if (nameCompare !== 0) return nameCompare;
-      return a["Activity Type"].localeCompare(b["Activity Type"]);
+      return a["Student Name"].localeCompare(b["Student Name"]);
     });
 
     console.log("📋 Export data prepared:", exportData.length, "rows");
@@ -894,29 +905,36 @@ const exportMonthlyProgress = async () => {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(exportData);
 
-    // Set column widths
+    // Set column widths for comprehensive format
     const colWidths = [
       { wch: 25 }, // Student Name
       { wch: 15 }, // Student ID
-      { wch: 15 }, // Activity Type
-      { wch: 12 }, // Total Sessions
-      { wch: 15 }, // Total Words Read
-      { wch: 18 }, // Average Accuracy
-      { wch: 12 }, // Total Miscues
-      { wch: 15 }, // Mispronunciation
-      { wch: 12 }, // Substitution
-      { wch: 10 }, // Omission
-      { wch: 10 }, // Insertion
-      { wch: 10 }, // Repetition
-      { wch: 15 }, // Self Correction
-      { wch: 10 }, // Reversal
-      { wch: 15 }, // Transposition
-      { wch: 12 }, // CVC Words
-      { wch: 15 }, // Blending Words
-      { wch: 18 }, // Silent Letter Words
-      { wch: 18 }, // Phonics Merger Words
-      { wch: 12 }, // Sight Words
-      { wch: 12 }, // Other Words
+      // Phonics Progress columns
+      { wch: 15 }, // CVC Words Read
+      { wch: 16 }, // Blending Words Read
+      { wch: 20 }, // Silent Letter Words Read
+      { wch: 20 }, // Phonics Merger Words Read
+      { wch: 16 }, // Sight Words Read
+      { wch: 15 }, // Other Words Read
+      { wch: 16 }, // Total Words Read
+      { wch: 14 }, // Correct Words
+      { wch: 14 }, // CVC Accuracy %
+      { wch: 17 }, // Blending Accuracy %
+      { wch: 21 }, // Silent Letter Accuracy %
+      { wch: 21 }, // Phonics Merger Accuracy %
+      { wch: 17 }, // Sight Words Accuracy %
+      // Miscue Summary columns
+      { wch: 14 }, // Total Miscues
+      { wch: 16 }, // Mispronunciations
+      { wch: 12 }, // Omissions
+      { wch: 14 }, // Substitutions
+      { wch: 12 }, // Insertions
+      { wch: 12 }, // Repetitions
+      { wch: 14 }, // Transpositions
+      { wch: 11 }, // Reversals
+      { wch: 16 }, // Self Corrections
+      { wch: 22 }, // Meaning Maintained Count
+      { wch: 15 }, // Sessions Count
     ];
     ws["!cols"] = colWidths;
 

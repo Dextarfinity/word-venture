@@ -15,10 +15,10 @@
             <div class="search-container">
               <input
                 type="text"
-                placeholder="SEARCH"
+                placeholder="SEARCH STUDENTS IN DATABASE"
                 class="search-input"
                 v-model="searchQuery"
-                @input="filterStudents"
+                @input="handleSearchInput"
               />
               <ion-icon :icon="searchOutline" class="search-icon"></ion-icon>
             </div>
@@ -50,23 +50,40 @@
             </div>
           </Transition>
 
-          <!-- Suggested Students Section -->
+          <!-- Search Results / Suggested Students Section -->
           <div class="suggested-section">
             <div class="section-header">
-              <h4 class="suggested-title">SUGGESTED</h4>
+              <h4 class="suggested-title">{{ searchQuery ? 'SEARCH RESULTS' : 'SUGGESTED' }}</h4>
             </div>
-            <TransitionGroup name="list-item" tag="div" class="suggested-students-list">
+
+            <!-- Loading indicator for search -->
+            <div v-if="isSearching" class="loading-state">
+              <div class="loading-spinner"></div>
+              <p>Searching students...</p>
+            </div>
+
+            <!-- Search results or suggested students -->
+            <TransitionGroup 
+              v-else-if="displayedSuggestedStudents.length > 0" 
+              name="list-item" 
+              tag="div" 
+              class="suggested-students-list"
+            >
               <div
-                v-for="student in filteredSuggestedStudents"
+                v-for="student in displayedSuggestedStudents"
                 :key="student.id"
                 class="suggested-student-item"
-                @click="playClick('teacher'); addSuggestedStudent(student)"
+                @click="playClick('teacher'); addStudent(student)"
               >
                 <div class="student-info">
                   <div class="student-avatar">
                     <ion-icon :icon="personOutline" class="avatar-icon"></ion-icon>
                   </div>
-                  <span class="student-name">{{ student.name }}</span>
+                  <div class="student-details">
+                    <span class="student-name">{{ student.name }}</span>
+                    <span v-if="searchQuery" class="student-id">ID: {{ student.user_id || 'No ID' }}</span>
+                    <span class="student-level">{{ student.level_name }}</span>
+                  </div>
                 </div>
                 <div class="student-selection">
                   <div class="selection-circle">
@@ -76,16 +93,17 @@
               </div>
             </TransitionGroup>
 
-            <!-- Empty state for suggested students -->
+            <!-- Empty state -->
             <Transition name="fade">
               <div
-                v-if="!isLoadingSuggested && filteredSuggestedStudents.length === 0"
+                v-if="!isSearching && displayedSuggestedStudents.length === 0"
                 class="empty-state"
               >
                 <p v-if="searchQuery">
-                  No suggested students found matching "{{ searchQuery }}"
+                  No students found matching "{{ searchQuery }}"
                 </p>
-                <p v-else>No suggested students available</p>
+                <p v-else-if="!searchQuery">Type to search for students in the database</p>
+                <p v-else>No students available</p>
               </div>
             </Transition>
           </div>
@@ -224,6 +242,9 @@ const availableStudents = ref([]);
 const suggestedStudents = ref([]);
 const isLoadingEnrolled = ref(false);
 const isLoadingSuggested = ref(false);
+const isSearching = ref(false);
+const searchResults = ref([]);
+const searchTimeout = ref(null);
 
 // Fetch enrolled students from backend
 const fetchEnrolledStudents = async () => {
@@ -345,19 +366,59 @@ const filteredEnrolledStudents = computed(() => {
   );
 });
 
-const filteredSuggestedStudents = computed(() => {
-  if (!searchQuery.value.trim()) {
-    return suggestedStudents.value;
-  }
-
-  return suggestedStudents.value.filter((student) =>
-    student.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-  );
+const displayedSuggestedStudents = computed(() => {
+  return searchQuery.value.trim() ? searchResults.value : suggestedStudents.value;
 });
 
-// Methods
+// Database search methods
+const performDatabaseSearch = async (query) => {
+  if (!query.trim()) {
+    searchResults.value = [];
+    return;
+  }
+
+  try {
+    isSearching.value = true;
+    console.log('🔍 Searching database for:', query);
+
+    // Search students in database using TeacherService
+    const result = await TeacherService.searchStudents(query);
+
+    if (result.success) {
+      // Filter out already enrolled students
+      const enrolledIds = enrolledStudents.value.map((s) => s.id);
+      const availableResults = result.data.filter(
+        (student) => !enrolledIds.includes(student.id)
+      );
+      
+      searchResults.value = availableResults;
+      console.log(`✅ Found ${availableResults.length} students matching "${query}"`);
+    } else {
+      console.warn('⚠️ Search failed:', result.error);
+      searchResults.value = [];
+    }
+  } catch (error) {
+    console.error('❌ Error searching students:', error);
+    searchResults.value = [];
+  } finally {
+    isSearching.value = false;
+  }
+};
+
+const handleSearchInput = () => {
+  // Clear existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+
+  // Debounce search to avoid too many database calls
+  searchTimeout.value = setTimeout(() => {
+    performDatabaseSearch(searchQuery.value);
+  }, 500);
+};
+
 const filterStudents = () => {
-  // Filtering is handled by computed property
+  // Legacy method - now handled by handleSearchInput
 };
 
 const showAddStudent = () => {
@@ -1222,5 +1283,40 @@ onBeforeUnmount(() => {
 /* Stagger Animation for Lists */
 .list-item-enter-active {
   transition-delay: calc(var(--i, 0) * 0.05s);
+}
+
+/* Search Loading State */
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #4f9eff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Student Details for Search Results */
+.student-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.student-id {
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
+}
+
+.student-level {
+  font-size: 10px;
+  color: #4f9eff;
+  font-weight: 500;
 }
 </style>
