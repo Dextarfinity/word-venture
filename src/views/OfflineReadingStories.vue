@@ -346,6 +346,7 @@ const readingCompleted = ref(false);
 const speechSystemReady = ref(false);
 const isNativePlatform = Capacitor.isNativePlatform();
 let recognizer = null;
+let recognition = null; // Web Speech API recognizer
 let audioContext, scriptProcessor, mediaStream;
 
 // Navigation
@@ -490,6 +491,49 @@ const initNativeSpeechRecognition = async () => {
   }
 };
 
+// Web Speech API fallback
+const initWebSpeechAPI = async () => {
+  try {
+    console.log("🎤 Initializing Web Speech API as fallback");
+    
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.error("❌ Web Speech API not available");
+      alert("Speech recognition is not available in this browser.");
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const result = event.results[event.results.length - 1];
+      const transcript = result[0].transcript;
+      const isFinal = result.isFinal;
+      console.log(`🎤 Web Speech ${isFinal ? 'Final' : 'Interim'}: "${transcript}"`);
+      checkWord(transcript, isFinal);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("🎤 Web Speech error:", event.error);
+    };
+
+    recognition.onend = () => {
+      if (listening.value) {
+        recognition.start();
+      }
+    };
+
+    console.log("✅ Web Speech API ready");
+    speechSystemReady.value = true;
+  } catch (error) {
+    console.error("❌ Failed to initialize Web Speech API:", error);
+    alert("Failed to initialize voice recognition. " + error.message);
+  }
+};
+
 // Vosk offline speech recognition initialization
 const initVoskOfflineRecognition = async () => {
   try {
@@ -626,7 +670,9 @@ const initVoskOfflineRecognition = async () => {
     }
 
     if (!modelLoaded || !recognizer) {
-      throw new Error("Failed to load any Vosk model or create recognizer");
+      console.warn("⚠️ Failed to load Vosk model, falling back to Web Speech API");
+      await initWebSpeechAPI();
+      return;
     }
 
     // Setup microphone
@@ -806,6 +852,9 @@ const startReading = async () => {
   if (isNativePlatform) {
     console.log("🎯 Starting reading with native speech recognition");
     await startNativeSpeechRecognition();
+  } else if (recognition) {
+    console.log("🎯 Starting reading with Web Speech API");
+    recognition.start();
   } else {
     console.log("🎯 Starting offline reading with Vosk");
   }
@@ -820,6 +869,8 @@ const stopReading = async () => {
 
   if (isNativePlatform) {
     await stopNativeSpeechRecognition();
+  } else if (recognition) {
+    recognition.stop();
   }
 
   console.log("🛑 Reading stopped");

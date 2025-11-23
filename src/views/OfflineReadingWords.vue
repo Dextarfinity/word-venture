@@ -327,6 +327,7 @@ let scriptProcessor = null;
 let mediaStream = null;
 let voskRecognizer = null;
 let model = null;
+let recognition = null; // Web Speech API recognizer
 
 // Navigation
 const goBack = () => {
@@ -557,6 +558,48 @@ const initNativeSpeechRecognition = async () => {
   }
 };
 
+// Web Speech API fallback
+const initWebSpeechAPI = async () => {
+  try {
+    console.log("🎤 Initializing Web Speech API as fallback");
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.error("❌ Web Speech API not available");
+      alert("Speech recognition is not available in this browser.");
+      return;
+    }
+
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      const result = event.results[event.results.length - 1];
+      const transcript = result[0].transcript;
+      console.log(`🎤 Web Speech: "${transcript}"`);
+      checkWord(transcript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("🎤 Web Speech error:", event.error);
+    };
+
+    recognition.onend = () => {
+      if (isListening.value) {
+        recognition.start();
+      }
+    };
+
+    console.log("✅ Web Speech API ready");
+    speechSystemReady.value = true;
+  } catch (error) {
+    console.error("❌ Failed to initialize Web Speech API:", error);
+    alert("Failed to initialize voice recognition. " + error.message);
+  }
+};
+
 // Initialize Vosk offline recognition (copied from WordReadingPage.vue)
 const initVoskOfflineRecognition = async () => {
   try {
@@ -730,13 +773,8 @@ const initVoskOfflineRecognition = async () => {
     }
 
     if (!modelLoaded || !voskRecognizer) {
-      console.error("❌ Failed to load any Vosk model or create recognizer");
-      speechSystemReady.value = false;
-
-      // Show user-friendly error
-      alert(
-        "Voice recognition is not available. You can still practice by looking at the words and using the navigation buttons."
-      );
+      console.warn("⚠️ Failed to load Vosk model, falling back to Web Speech API");
+      await initWebSpeechAPI();
       return;
     }
 
@@ -923,38 +961,46 @@ const toggleListening = async () => {
       await stopNativeSpeechRecognition();
     }
   } else {
-    // Use Vosk on web
-    if (!voskRecognizer) {
-      console.log("🔄 Vosk not initialized, initializing now...");
-      await initVoskOfflineRecognition();
-    }
+    // Use Web Speech API or Vosk on web
+    if (recognition) {
+      // Use Web Speech API fallback
+      if (!isListening.value) {
+        isListening.value = true;
+        recognition.start();
+        console.log("🎤 Started Web Speech API listening");
+      } else {
+        isListening.value = false;
+        recognition.stop();
+        console.log("🎤 Stopped Web Speech API listening");
+      }
+    } else if (voskRecognizer) {
+      // Use Vosk
+      if (!isListening.value) {
+        isListening.value = true;
+        console.log("🎤 Started Vosk offline listening");
+      } else {
+        isListening.value = false;
+        console.log("🎤 Stopped Vosk offline listening");
 
-    if (!voskRecognizer) {
-      console.error("❌ Failed to initialize offline speech recognition");
-      return;
-    }
-
-    if (!isListening.value) {
-      isListening.value = true;
-      console.log("🎤 Started Vosk offline listening");
-    } else {
-      isListening.value = false;
-      console.log("🎤 Stopped Vosk offline listening");
-
-      // Try to get final result from Vosk before stopping
-      if (voskRecognizer && voskRecognizer.retrieveFinalResult) {
-        try {
-          const finalResult = voskRecognizer.retrieveFinalResult();
-          console.log("🎤 Vosk final result on stop:", finalResult);
-          if (finalResult && finalResult.text && finalResult.text.trim()) {
-            const transcript = finalResult.text.trim();
-            console.log("🎤 Vosk Final Result (on stop):", transcript);
-            checkWord(transcript);
+        // Try to get final result from Vosk before stopping
+        if (voskRecognizer && voskRecognizer.retrieveFinalResult) {
+          try {
+            const finalResult = voskRecognizer.retrieveFinalResult();
+            console.log("🎤 Vosk final result on stop:", finalResult);
+            if (finalResult && finalResult.text && finalResult.text.trim()) {
+              const transcript = finalResult.text.trim();
+              console.log("🎤 Vosk Final Result (on stop):", transcript);
+              checkWord(transcript);
+            }
+          } catch (error) {
+            console.error("🎤 Error retrieving final result:", error);
           }
-        } catch (error) {
-          console.error("🎤 Error retrieving final result:", error);
         }
       }
+    } else {
+      // Neither system is ready, try to initialize
+      console.log("🔄 No speech system ready, initializing...");
+      await initVoskOfflineRecognition();
     }
   }
 };
