@@ -295,11 +295,19 @@
 import { ref, onMounted, onBeforeUnmount, computed } from "vue";
 import { IonPage, IonContent, IonButton, IonIcon, IonSpinner } from "@ionic/vue";
 import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
+import { useAuth, useStudent } from "@/composables/services";
 import { Capacitor } from "@capacitor/core";
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import supabase from "../supabase.js";
+import StudentService from "../services/studentService.js";
 
 // Audio system
 const { startMusic, stopMusic, playClick, playWordFeedback } = useAudio();
+
+// Auth and student services
+const { profile, isAuthenticated, initialize: initAuth } = useAuth();
+const { studentStats, getStudentStats } = useStudent();
+
 import {
   arrowBackOutline,
   micOutline,
@@ -322,6 +330,35 @@ const speechSystemReady = ref(false);
 const isWordCooldown = ref(false); // Cooldown state for 2 second pause
 const activeRecognitionSystem = ref(null); // Track which system is active: 'native', 'vosk', or 'webspeech'
 const isNativePlatform = Capacitor.isNativePlatform();
+
+// Session tracking variables
+const sessionStartTime = ref(null);
+const sessionWordTimes = ref([]);
+const currentWordStartTime = ref(null);
+const currentSessionId = ref(null);
+const sessionMiscues = ref([]);
+const correctWordsCount = ref(0);
+const totalWordsAttempted = ref(0);
+const streak = ref(0);
+const consecutiveErrors = ref(0);
+
+// Phonics progress tracking
+const categoryProgress = ref({
+  CVC: { total: 0, correct: 0 },
+  Blending: { total: 0, correct: 0 },
+  "Silent Letter": { total: 0, correct: 0 },
+  "Phonics Merger": { total: 0, correct: 0 },
+  "Sight Words": { total: 0, correct: 0 },
+  Other: { total: 0, correct: 0 },
+});
+
+const sessionData = ref({
+  totalWords: 0,
+  correctWords: 0,
+  totalTime: 0,
+  averageAccuracy: 0,
+  readingSpeed: 0,
+});
 
 // Offline speech recognition variables
 let audioContext = null;
@@ -365,6 +402,12 @@ const generateWords = async () => {
     words.value = selectedWords;
     wordsSelected.value = true;
 
+    // Reset session tracking for new session
+    resetReadingSession();
+
+    // Start session tracking
+    await startReadingSession();
+
     console.log("📝 Generated words:", words.value);
   } catch (error) {
     console.error("❌ Error generating words:", error);
@@ -372,6 +415,38 @@ const generateWords = async () => {
   } finally {
     isGenerating.value = false;
   }
+};
+
+// Helper function to reset reading session
+const resetReadingSession = () => {
+  correctWordsCount.value = 0;
+  totalWordsAttempted.value = 0;
+  streak.value = 0;
+  consecutiveErrors.value = 0;
+
+  // Reset session tracking
+  sessionStartTime.value = null;
+  sessionWordTimes.value = [];
+  currentWordStartTime.value = null;
+  sessionMiscues.value = []; // Clear miscues for new session
+
+  // Reset category progress tracking
+  categoryProgress.value = {
+    CVC: { total: 0, correct: 0 },
+    Blending: { total: 0, correct: 0 },
+    "Silent Letter": { total: 0, correct: 0 },
+    "Phonics Merger": { total: 0, correct: 0 },
+    "Sight Words": { total: 0, correct: 0 },
+    Other: { total: 0, correct: 0 },
+  };
+
+  sessionData.value = {
+    totalWords: 0,
+    correctWords: 0,
+    totalTime: 0,
+    averageAccuracy: 0,
+    readingSpeed: 0,
+  };
 };
 
 const loadWordsFromCSV = async () => {
@@ -468,7 +543,10 @@ const resetWords = () => {
   });
 };
 
-const tryAgain = () => {
+const tryAgain = async () => {
+  // Record the current session before starting a new attempt
+  await recordReadingSession();
+  
   resetWords();
 };
 
@@ -477,6 +555,83 @@ const skipWord = () => {
   if (currentWord) {
     currentWord.status = "skipped";
   }
+};
+
+// Levenshtein distance (edit distance) helper
+function levenshtein(a, b) {
+  const matrix = [];
+
+  // increment along the first column of each row
+  for (let i = 0; i <= b.length; i++) {
+    matrix[i] = [i];
+  }
+
+  // increment each column in the first row
+  for (let j = 0; j <= a.length; j++) {
+    matrix[0][j] = j;
+  }
+
+  // fill in the rest of the matrix
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1, // substitution
+          matrix[i][j - 1] + 1, // insertion
+          matrix[i - 1][j] + 1 // deletion
+        );
+      }
+    }
+  }
+
+  return matrix[b.length][a.length];
+}
+
+// Get the phonics category for a given word
+const getWordCategory = (word) => {
+  if (!word || typeof word !== "string") return "Other";
+
+  const cleanWord = word.toLowerCase().trim();
+
+  // CVC pattern (Consonant-Vowel-Consonant)
+  const cvcPattern = /^[bcdfghjklmnpqrstvwxyz][aeiou][bcdfghjklmnpqrstvwxyz]$/i;
+  if (cvcPattern.test(cleanWord)) {
+    return "CVC";
+  }
+
+  // Blending patterns (consonant blends at start)
+  const blendingPattern = /^(bl|cl|fl|gl|pl|sl|br|cr|dr|fr|gr|pr|tr|sc|sk|sm|sn|sp|st|sw|tw)/i;
+  if (blendingPattern.test(cleanWord)) {
+    return "Blending";
+  }
+
+  // Silent letter patterns
+  const silentPattern = /^kn|mb$|^wr|gh|^gn|alk$|ould$/i;
+  if (silentPattern.test(cleanWord)) {
+    return "Silent Letter";
+  }
+
+  // Phonics mergers (digraphs)
+  const mergerPattern = /ch|sh|th|wh|ph|ng|ck$|qu/i;
+  if (mergerPattern.test(cleanWord)) {
+    return "Phonics Merger";
+  }
+
+  // Sight words
+  const sightWords = [
+    "the", "is", "was", "are", "were", "have", "has", "had", "do", "does", "did",
+    "will", "would", "could", "should", "can", "may", "must", "shall", "might",
+    "ought", "am", "be", "been", "being", "go", "goes", "went", "come", "came",
+    "get", "got", "make", "made", "take", "took", "see", "saw", "know", "knew",
+    "think", "thought",
+  ];
+  if (sightWords.includes(cleanWord)) {
+    return "Sight Words";
+  }
+
+  return "Other";
 };
 
 // CapyBuddy expressions
@@ -507,6 +662,17 @@ onMounted(async () => {
   startMusic(MUSIC_TYPES.READING, 0.3);
 
   console.log("📝 Initializing offline word reading...");
+
+  // Initialize user authentication and data
+  try {
+    await initAuth();
+    if (isAuthenticated.value && profile.value) {
+      console.log("✅ User authenticated:", profile.value.email);
+      await getStudentStats(profile.value.id);
+    }
+  } catch (error) {
+    console.error("Error loading user data:", error);
+  }
 
   // Pre-load words for faster generation
   try {
@@ -607,15 +773,7 @@ const initWebSpeechAPI = async () => {
 
     recognition.onend = () => {
       console.log("🎤 Web Speech API listening ended");
-      if (isListening.value && !isWordCooldown.value) {
-        // Automatically restart if still listening and not in cooldown
-        console.log("🔄 Restarting Web Speech API");
-        setTimeout(() => {
-          if (isListening.value && !isWordCooldown.value) {
-            recognition.start();
-          }
-        }, 100);
-      }
+      isListening.value = false;
     };
 
     console.log("✅ Web Speech API initialized successfully");
@@ -1053,106 +1211,319 @@ const toggleListening = async () => {
   }
 };
 
-// Word checking with more flexible matching for individual words
+// ✅ Check spoken word against current word (advanced version from WordReadingPage)
 const checkWord = (spokenText) => {
-  // Skip if in cooldown period to prevent rapid successive checks
-  if (isWordCooldown.value) {
-    console.log("⏸️ Cooldown active - ignoring spoken text");
-    return;
+  console.log("🔍 === checkWord function called ===");
+  console.log("🎤 Spoken word:", spokenText);
+  console.log("📚 Available words:", words.value);
+
+  const target = words.value.find((w) => w.status === null);
+  console.log("🎯 Target word found:", target);
+
+  if (!target) {
+    console.log("❌ No words left to check");
+    return; // no words left
   }
 
-  const currentWord = getCurrentWord();
-  if (!currentWord) return;
+  // Start word timer if not already started
+  if (!currentWordStartTime.value) {
+    startWordTimer();
+  }
 
-  const spoken = spokenText
-    .toLowerCase()
-    .replace(/[^a-zA-Z0-9\s]/g, "")
-    .trim();
-  const expected = currentWord.text.toLowerCase();
+  // Increment total words attempted
+  totalWordsAttempted.value++;
 
-  console.log(`🔍 Checking: "${spoken}" vs "${expected}"`);
+  // Get current word position in the list
+  const wordPosition = words.value.findIndex((w) => w === target) + 1;
 
-  // Check if any word in the spoken text matches the expected word
-  const spokenWords = spoken.split(/\s+/);
-  let isMatch = false;
+  // Calculate similarity (Levenshtein)
+  const distance = levenshtein(spokenText.toUpperCase(), target.text.toUpperCase());
+  const maxLen = Math.max(spokenText.length, target.text.length);
+  const similarity = 1 - distance / maxLen;
 
-  for (const word of spokenWords) {
-    if (checkWordSimilarity(word, expected, 0.5)) {
-      isMatch = true;
-      break;
+  console.log(`📊 Similarity calculation:`);
+  console.log(`   Input: "${spokenText.toUpperCase()}" vs Target: "${target.text.toUpperCase()}"`);
+  console.log(
+    `   Distance: ${distance}, Max Length: ${maxLen}, Similarity: ${similarity}`
+  );
+
+  if (similarity >= 0.6) {
+    console.log("✅ Word matched! Marking as correct");
+    target.status = "correct";
+    
+    // 🎵 Play correct word sound
+    playWordFeedback(true);
+    
+    streak.value++; // Increase streak
+    consecutiveErrors.value = 0; // Reset consecutive errors
+    correctWordsCount.value++; // Track correct words for results
+
+    // Track word category for phonics progress
+    const category = getWordCategory(target.text);
+    if (categoryProgress.value[category]) {
+      categoryProgress.value[category].total++;
+      categoryProgress.value[category].correct++;
+    }
+
+    // End word timer with success
+    endWordTimer(true);
+
+    // Stop listening immediately
+    stopListening();
+
+    console.log(`🔥 Streak increased to: ${streak.value}`);
+    console.log(`✅ Category progress for "${category}":`, categoryProgress.value[category]);
+  } else {
+    console.log("❌ Word not matched. Marking as incorrect");
+    target.status = "incorrect";
+    
+    // 🎵 Play incorrect word sound
+    playWordFeedback(false);
+    
+    consecutiveErrors.value++; // Increase consecutive errors
+
+    // Track word category for phonics progress (incorrect attempt)
+    const category = getWordCategory(target.text);
+    if (categoryProgress.value[category]) {
+      categoryProgress.value[category].total++;
+    }
+
+    // 📝 Record the miscue for detailed analytics
+    const miscueType = determineMiscueType(target.text, spokenText);
+    recordMiscue(target.text, spokenText, wordPosition, miscueType);
+
+    // End word timer with failure
+    endWordTimer(false);
+
+    // Start cooldown to prevent rapid successive checks, then stop listening
+    isWordCooldown.value = true;
+    setTimeout(() => {
+      target.status = null;
+      isWordCooldown.value = false;
+      stopListening();
+    }, 2000);
+
+    console.log(`😞 Consecutive errors: ${consecutiveErrors.value}`);
+    console.log(`❌ Category progress for "${category}":`, categoryProgress.value[category]);
+  }
+
+  console.log("🔍 === checkWord function end ===");
+};
+
+// Determine the type of miscue based on expected vs actual reading
+const determineMiscueType = (expected, actual) => {
+  if (!actual || actual.trim() === "") {
+    return "omission"; // Student skipped the word
+  }
+
+  if (actual.length > expected.length * 1.5) {
+    return "insertion"; // Student added extra words/sounds
+  }
+
+  if (actual.toLowerCase() !== expected.toLowerCase()) {
+    // Check if it's a substitution (completely different word) or mispronunciation
+    const similarity = 1 - levenshtein(actual.toLowerCase(), expected.toLowerCase()) / Math.max(actual.length, expected.length);
+    if (similarity < 0.3) {
+      return "substitution"; // Completely different word
+    } else {
+      return "mispronunciation"; // Similar but not quite right
     }
   }
 
-  if (isMatch) {
-    console.log(`✅ Word match! "${spoken}" → "${expected}"`);
-    currentWord.status = "correct";
-    isWordCooldown.value = true; // Start cooldown
+  return "mispronunciation"; // Default fallback
+};
 
-    // 2 second cooldown before moving to next word
-    setTimeout(() => {
-      isWordCooldown.value = false;
-      stopListening();
-    }, 2000);
-  } else {
-    console.log(`❌ No match: "${spoken}" vs "${expected}"`);
-    currentWord.status = "incorrect";
-    isWordCooldown.value = true; // Start cooldown
+// Record a miscue (reading error) in the database
+const recordMiscue = async (
+  expectedWord,
+  actualReading,
+  wordPosition,
+  miscueType = "mispronunciation"
+) => {
+  try {
+    if (!profile.value?.id || !currentSessionId.value) {
+      console.log("⚠️ Cannot record miscue - no user or session ID");
+      return;
+    }
 
-    // 2 second cooldown to allow retry
-    setTimeout(() => {
-      currentWord.status = null;
-      isWordCooldown.value = false;
-      stopListening();
-    }, 2000);
+    console.log(`📝 Recording miscue: "${actualReading}" instead of "${expectedWord}"`);
+
+    // Store miscue in session array for review
+    const miscueData = {
+      user_id: profile.value.id,
+      session_id: currentSessionId.value,
+      expected_word: expectedWord,
+      actual_reading: actualReading,
+      miscue_type: miscueType,
+      word_position: wordPosition,
+      timestamp: new Date().toISOString(),
+    };
+
+    sessionMiscues.value.push(miscueData);
+
+    const { error } = await supabase.from("reading_miscues").insert(miscueData);
+
+    if (error) {
+      console.error("Error recording miscue:", error);
+    } else {
+      console.log("✅ Miscue recorded successfully");
+    }
+  } catch (error) {
+    console.error("❌ Error in recordMiscue:", error);
   }
 };
 
-// Enhanced word similarity for single word matching
-const checkWordSimilarity = (spoken, expected, threshold = 0.5) => {
-  if (spoken === expected) return true;
-  if (spoken.length < 2 || expected.length < 2) return false;
+// Track when a word reading attempt starts
+const startWordTimer = () => {
+  currentWordStartTime.value = Date.now();
+};
 
-  // Exact match gets priority
-  if (spoken === expected) return true;
-
-  // Check if words are similar length and have good prefix match
-  const minLength = Math.min(spoken.length, expected.length);
-  const maxLength = Math.max(spoken.length, expected.length);
-
-  // Length similarity check
-  if (Math.abs(spoken.length - expected.length) > Math.max(2, expected.length * 0.4)) {
-    return false;
+// Track when a word reading attempt ends
+const endWordTimer = (wasCorrect = false) => {
+  if (currentWordStartTime.value) {
+    const timeSpent = Date.now() - currentWordStartTime.value;
+    sessionWordTimes.value.push({
+      timeSpent,
+      wasCorrect,
+      timestamp: Date.now(),
+    });
+    currentWordStartTime.value = null;
   }
+};
 
-  // Prefix matching (important for children's pronunciation)
-  let commonPrefixLength = 0;
-  for (let i = 0; i < minLength; i++) {
-    if (spoken[i] === expected[i]) {
-      commonPrefixLength++;
-    } else {
-      break;
+// Calculate session statistics
+const calculateSessionStats = () => {
+  const endTime = Date.now();
+  const totalSessionTime = sessionStartTime.value
+    ? (endTime - sessionStartTime.value) / 1000
+    : 0; // in seconds
+
+  const totalWords = totalWordsAttempted.value;
+  const correctWords = correctWordsCount.value;
+  const accuracy = totalWords > 0 ? (correctWords / totalWords) * 100 : 0;
+
+  // Calculate reading speed (words per minute)
+  const readingSpeed = totalSessionTime > 0 ? totalWords / (totalSessionTime / 60) : 0;
+
+  sessionData.value = {
+    totalWords,
+    correctWords,
+    totalTime: Math.round(totalSessionTime),
+    averageAccuracy: Math.round(accuracy * 100) / 100,
+    readingSpeed: Math.round(readingSpeed * 100) / 100,
+  };
+
+  console.log("📊 Session Stats:", sessionData.value);
+  return sessionData.value;
+};
+
+// Start tracking a reading session
+const startReadingSession = async () => {
+  console.log("📊 Starting reading session tracking");
+
+  try {
+    if (!profile.value?.id) {
+      console.log("⚠️ No user profile, skipping session creation");
+      return;
     }
+
+    // Create reading session in database
+    const sessionDataToInsert = {
+      user_id: profile.value.id,
+      start_time: new Date().toISOString(),
+      session_type: "offline_word_reading",
+    };
+
+    console.log("📝 Creating reading session in database...");
+    const { data, error } = await supabase
+      .from("reading_sessions")
+      .insert(sessionDataToInsert)
+      .select();
+
+    if (error) {
+      console.error("Error creating reading session:", error);
+    } else {
+      currentSessionId.value = data?.[0]?.id;
+      console.log("✅ Session created with ID:", currentSessionId.value);
+    }
+  } catch (error) {
+    console.error("❌ Error in startReadingSession:", error);
+    // Fallback to string ID
+    currentSessionId.value = `session_${Date.now()}`;
   }
 
-  const prefixSimilarity = commonPrefixLength / maxLength;
+  sessionStartTime.value = Date.now();
+  sessionWordTimes.value = [];
+  sessionData.value.totalWords = words.value.length;
+};
 
-  // Character overlap
-  const spokenChars = new Set(spoken);
-  const expectedChars = new Set(expected);
-  const intersection = new Set([...spokenChars].filter((x) => expectedChars.has(x)));
-  const union = new Set([...spokenChars, ...expectedChars]);
-  const overlapSimilarity = intersection.size / union.size;
+// Record reading session to database
+const recordReadingSession = async () => {
+  if (!profile.value?.id) {
+    console.warn("No user profile found, skipping session recording");
+    return;
+  }
 
-  // Combine similarities with weights
-  const finalSimilarity = prefixSimilarity * 0.6 + overlapSimilarity * 0.4;
+  try {
+    const stats = calculateSessionStats();
 
-  console.log(
-    `Word similarity: "${spoken}" vs "${expected}" = ${(finalSimilarity * 100).toFixed(
-      1
-    )}%`
-  );
+    // Record the completed reading session
+    const sessionDataToUpdate = {
+      end_time: new Date().toISOString(),
+      words_read: stats.totalWords,
+      correct_words: stats.correctWords,
+      accuracy_percentage: stats.averageAccuracy,
+      reading_speed_wpm: stats.readingSpeed,
+      total_time_seconds: stats.totalTime,
+    };
 
-  return finalSimilarity >= threshold;
+    console.log("📝 Updating reading session:", sessionDataToUpdate);
+
+    if (currentSessionId.value && !currentSessionId.value.startsWith('session_')) {
+      const { error } = await supabase
+        .from("reading_sessions")
+        .update(sessionDataToUpdate)
+        .eq("id", currentSessionId.value);
+
+      if (error) {
+        console.error("Error updating reading session:", error);
+      } else {
+        console.log("✅ Reading session recorded successfully");
+      }
+    }
+
+    // Update user progress
+    await updateUserProgress(stats);
+  } catch (error) {
+    console.error("❌ Error recording reading session:", error);
+  }
+};
+
+// Update user progress in database
+const updateUserProgress = async (stats) => {
+  if (!profile.value?.id) return;
+
+  try {
+    const progressData = {
+      words_read: stats.totalWords,
+      correct_words: stats.correctWords,
+      accuracy_percentage: stats.averageAccuracy,
+      reading_speed_wpm: stats.readingSpeed,
+    };
+
+    console.log("📊 Updating user progress:", progressData);
+
+    const result = await StudentService.updateUserStats(profile.value.id, progressData);
+
+    if (result.success) {
+      console.log("✅ User progress updated successfully");
+      await getStudentStats(profile.value.id);
+    } else {
+      console.error("Error updating user progress:", result.error);
+    }
+  } catch (error) {
+    console.error("❌ Error updating user progress:", error);
+  }
 };
 
 // Native speech recognition functions for mobile
@@ -1234,10 +1605,16 @@ const stopListening = async () => {
     } else {
       // Stop Web Speech API or Vosk
       if (recognition && recognition.stop) {
+        isListening.value = false;
         recognition.stop();
+        console.log("🛑 Web Speech API stopped");
       }
-      // Vosk is handled by the recognizer object - it continues listening automatically
-      // and will emit results when available
+      
+      // Stop Vosk listening
+      if (voskRecognizer) {
+        isListening.value = false;
+        console.log("🛑 Vosk listening stopped");
+      }
     }
     console.log("🎤 Speech recognition stopped (music continues playing)");
   } catch (error) {
