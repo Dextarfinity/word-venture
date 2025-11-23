@@ -539,7 +539,7 @@ import { useAuth, useTeacher } from "@/composables/services";
 import { useAvatar } from "@/composables/useAvatar";
 import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
 import * as XLSX from "xlsx";
-import { supabase } from "@/services/supabase.js";
+import supabase from "@/supabase.js";
 
 // Audio system
 const { startMusic, stopMusic, playClick } = useAudio();
