@@ -1158,9 +1158,12 @@ onBeforeUnmount(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1.5rem;
-  min-height: calc(100vh - 80px);
-  gap: 1.5rem;
+  padding: 1rem 1rem;
+  min-height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  gap: 1rem;
+  box-sizing: border-box;
 }
 
 /* === MASCOT === */
@@ -1504,7 +1507,7 @@ onBeforeUnmount(async () => {
 /* === RESPONSIVE DESIGN === */
 @media (max-width: 768px) {
   .header-content {
-    padding: 1rem;
+    padding: 0.75rem;
   }
 
   .header-title {
@@ -1516,21 +1519,25 @@ onBeforeUnmount(async () => {
   }
 
   .main-content {
-    padding: 1.5rem 1rem;
-    gap: 1.25rem;
+    padding: 0.5rem 0.75rem;
+    gap: 0.75rem;
+    padding-top: 1rem;
   }
 
   .word-card {
-    padding: 1.5rem;
+    padding: 1rem;
+    margin: 0 0.5rem;
+    max-width: calc(100vw - 2rem);
   }
 
   .word-display {
-    font-size: 2.5rem;
+    font-size: 2rem;
+    line-height: 1.2;
   }
 
   .mascot-image {
-    width: 100px;
-    height: 100px;
+    width: 80px;
+    height: 80px;
   }
 
   .microphone-button {
@@ -1541,29 +1548,50 @@ onBeforeUnmount(async () => {
   .mic-icon {
     font-size: 1.75rem;
   }
+
+  .progress-container {
+    max-width: calc(100vw - 3rem);
+    margin: 0 auto;
+  }
+
+  .speech-interface {
+    margin-top: auto;
+    padding-bottom: 1rem;
+  }
 }
 
 @media (max-width: 480px) {
   .header-left {
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .back-button {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .header-content {
+    padding: 0.5rem;
+  }
+
+  .main-content {
+    padding: 0.25rem 0.5rem;
+    gap: 0.5rem;
   }
 
   .word-display {
-    font-size: 2rem;
+    font-size: 1.75rem;
+    line-height: 1.2;
   }
 
   .word-card {
-    padding: 1.25rem;
+    padding: 0.75rem;
+    margin: 0 0.25rem;
   }
 
   .mascot-image {
-    width: 80px;
-    height: 80px;
+    width: 60px;
+    height: 60px;
   }
 
   .microphone-button {
@@ -1572,11 +1600,25 @@ onBeforeUnmount(async () => {
   }
 
   .mic-icon {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
   }
 
   .progress-container {
-    max-width: 300px;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .audio-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .practice-label {
+    font-size: 1rem;
+  }
+
+  .attempt-info,
+  .repetition-counter {
+    font-size: 0.875rem;
   }
 }
 
@@ -1588,6 +1630,52 @@ onBeforeUnmount(async () => {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+/* === ULTRA SMALL SCREENS === */
+@media (max-width: 360px) {
+  .main-content {
+    gap: 0.25rem;
+    padding: 0.25rem;
+  }
+
+  .word-display {
+    font-size: 1.5rem;
+  }
+
+  .mascot-image {
+    width: 50px;
+    height: 50px;
+  }
+
+  .microphone-button {
+    width: 55px;
+    height: 55px;
+  }
+}
+
+/* === LANDSCAPE ORIENTATION === */
+@media (orientation: landscape) and (max-height: 600px) {
+  .main-content {
+    padding: 0.5rem;
+    gap: 0.5rem;
+  }
+
+  .mascot-container {
+    display: none;
+  }
+
+  .word-card {
+    padding: 0.75rem;
+  }
+
+  .word-display {
+    font-size: 1.5rem;
+  }
+
+  .header-subtitle {
+    display: none;
   }
 }
 

@@ -22,28 +22,8 @@ export function generateUpdatedCSV(data, filename) {
     });
   }
   
-  // Auto-download the updated CSV file
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log(`📁 Updated ${filename} downloaded`);
-    console.log(`📋 Instructions: Replace /csv_offline/${filename} with the downloaded file`);
-    
-    // Show instructions to user
-    setTimeout(() => {
-      alert(`📁 CSV Updated!\n\nA new ${filename} has been downloaded.\n\nTo use the updated data:\n1. Go to your csv_offline/ folder\n2. Replace the old ${filename} with the downloaded file\n3. Refresh the page`);
-    }, 1000);
-  }
-  
+  // CSV download functionality removed - data now synced to Supabase only
+  console.log(`✅ Data changes synced to Supabase - no local CSV download`);
   return csvContent;
 }
 
@@ -68,30 +48,9 @@ export async function updateCSVFile(data, filename) {
     });
   }
   
-  // Download the updated CSV file for manual replacement
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    console.log(`📁 Updated ${filename} downloaded - replace the file in csv_offline/`);
-    
-    // Show user instructions
-    setTimeout(() => {
-      alert(`📁 CSV Updated!\n\nA new ${filename} has been downloaded.\n\nTo use the updated data:\n1. Go to your csv_offline/ folder\n2. Replace ${filename} with the downloaded file\n3. Refresh the page to load new words`);
-    }, 1000);
-    
-    return true;
-  }
-  
-  return false;
+  // CSV download functionality removed - data now synced to Supabase only
+  console.log(`✅ Data changes synced to Supabase - no local CSV download`);
+  return true;
 }
 
 // Legacy function - kept for compatibility

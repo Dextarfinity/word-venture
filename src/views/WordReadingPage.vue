@@ -2368,7 +2368,7 @@ const checkAchievements = async (userId) => {
 };
 
 /**
- * Show achievement toast notification
+ * Show achievement toast notification with badge image
  */
 const showAchievementToast = async (achievement) => {
   // Log to console
@@ -2376,17 +2376,101 @@ const showAchievementToast = async (achievement) => {
   console.log(`📝 ${achievement.achievement_description}`);
   console.log(`🎁 +${achievement.points_required || 0} points!`);
 
-  // Show visual toast notification
-  const toast = await toastController.create({
-    header: '🏆 Achievement Unlocked!',
-    message: `${achievement.badge_icon} ${achievement.achievement_title}`,
-    duration: 4000,
-    position: 'top',
-    color: 'success',
-    cssClass: 'achievement-toast'
-  });
+  // Map database badge_icon names to actual file names (matching AchievementsPage logic)
+  const iconMapping = {
+    "first-steps.png": "First Steps.png",
+    "getting-started.png": "Getting Started.png",
+    "word-explorer.png": "Word Explorer.png",
+    "reading-rookie.png": "Reading Rookie.png",
+    "cvc-champion.png": "CVC Champion.png",
+    "perfect-reader.png": "Perfect Reader.png",
+    "precision-master.png": "Precision Master.png",
+    "flawless-flow.png": "Flawless Flow.png",
+    "accuracy-ace.png": "Accuracy Ace.png",
+    "error-free.png": "Error-Free Expert.png",
+    "quick-learner.png": "Quick Learner.png",
+    "speedy-reader.png": "Speedy Reader.png",
+    "lightning-fast.png": "Lightning Fast.png",
+    "racing-reader.png": "Racing Reader.png",
+    "speed-demon.png": "Speed Demon.png",
+    "daily-dedication.png": "Daily Dedication.png",
+    "weekly-warrior.png": "Weekly Warrior.png",
+    "word-collector.png": "Word Collector.png",
+    "halfway-hero.png": "Halfway Hero.png",
+    "graduation-cap.png": "Frustration Bound.png",
+  };
 
-  await toast.present();
+  let iconFileName = achievement.badge_icon || achievement.achievement_title;
+  
+  // Remove .png if it exists and convert to lowercase for mapping
+  const baseFileName = iconFileName.toLowerCase().replace(".png", "");
+  const mappedFileName = iconMapping[baseFileName + ".png"] || iconMapping[iconFileName];
+
+  if (mappedFileName) {
+    iconFileName = mappedFileName;
+  } else {
+    // If no mapping found, try to convert kebab-case to Title Case
+    iconFileName =
+      (achievement.badge_icon || achievement.achievement_title)
+        .replace(".png", "")
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ") + ".png";
+  }
+
+  // Construct badge image path (encode spaces in folder names)
+  const badgeImagePath = `/img/CapyBuddy%20Assets/Achievement%20Badges/${iconFileName}`;
+  
+  // Create custom achievement notification overlay
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10000;
+    background: white;
+    border: 2px solid black;
+    color: #333;
+    padding: 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 320px;
+    max-width: 400px;
+    animation: slideInDown 0.5s ease-out;
+  `;
+  
+  overlay.innerHTML = `
+    <img src="${badgeImagePath}" alt="${achievement.achievement_title}" 
+         style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 2px solid #333;" />
+    <div style="flex: 1;">
+      <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">🏆 ${achievement.achievement_title}</div>
+      <div style="font-size: 14px; opacity: 0.9;">+${achievement.points_required || 0} points earned!</div>
+    </div>
+    <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #333; font-size: 18px; cursor: pointer; padding: 4px; opacity: 0.7;">✓</button>
+  `;
+
+  // Add to page
+  document.body.appendChild(overlay);
+
+  // Auto-remove after 5 seconds
+  setTimeout(() => {
+    if (overlay.parentNode) {
+      overlay.style.animation = 'slideOutUp 0.5s ease-in';
+      setTimeout(() => overlay.remove(), 500);
+    }
+  }, 5000);
+  
+  // Inject the custom HTML into the toast after it's presented
+  const toastElement = await toast.getElement();
+  const messageElement = toastElement.querySelector('.toast-message');
+  if (messageElement) {
+    messageElement.innerHTML = '';
+    messageElement.appendChild(container);
+  }
 };
 
 // ============================================================================
@@ -3146,14 +3230,18 @@ onBeforeUnmount(() => {
   --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --color: #ffffff;
   font-family: 'Jua', cursive;
+  --min-height: 90px;
 }
 
 .achievement-toast::part(message) {
   font-size: 14px;
-  line-height: 1.8;
+  line-height: 1.4;
   color: #ffffff;
   opacity: 0.95;
-  white-space: pre-line;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
 }
 
 .achievement-toast::part(header) {
@@ -3166,5 +3254,28 @@ onBeforeUnmount(() => {
 .achievement-toast::part(button) {
   color: #ffffff;
   font-weight: 600;
+}
+
+/* Achievement notification animations */
+@keyframes slideInDown {
+  from {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutUp {
+  from {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(-50%) translateY(-100%);
+    opacity: 0;
+  }
 }
 </style>
