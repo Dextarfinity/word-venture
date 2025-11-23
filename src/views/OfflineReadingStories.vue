@@ -546,10 +546,9 @@ const initVoskOfflineRecognition = async () => {
     // Initialize Vosk with better error handling
     console.log("🔧 Loading Vosk model...");
 
-    // Try different model paths
+    // Try different model paths - vosk-browser needs .tar.gz files
     const modelPaths = [
-      "/models/vosk-model-small-en-us-0.15",
-      "/models/vosk-model-tl-ph-generic-0.6",
+      "/models/vosk-model-small-en-us-0.15.tar.gz",
     ];
 
     let modelLoaded = false;
