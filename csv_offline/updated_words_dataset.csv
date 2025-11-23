@@ -1,0 +1,1228 @@
+word,category
+cat,CVC
+dog,CVC
+bed,CVC
+sun,CVC
+map,CVC
+jam,CVC
+lid,CVC
+pen,CVC
+rug,CVC
+hop,CVC
+bat,CVC
+pig,CVC
+log,CVC
+fan,CVC
+cup,CVC
+net,CVC
+bag,CVC
+ten,CVC
+kid,CVC
+cap,CVC
+men,CVC
+win,CVC
+box,CVC
+red,CVC
+run,CVC
+fit,CVC
+pot,CVC
+top,CVC
+lip,CVC
+dot,CVC
+kit,CVC
+mad,CVC
+sad,CVC
+mud,CVC
+bud,CVC
+jet,CVC
+web,CVC
+wax,CVC
+yak,CVC
+zip,CVC
+vet,CVC
+hen,CVC
+ram,CVC
+pan,CVC
+rod,CVC
+fig,CVC
+dig,CVC
+bit,CVC
+sit,CVC
+pit,CVC
+hit,CVC
+mat,CVC
+pat,CVC
+rat,CVC
+fat,CVC
+hat,CVC
+cab,CVC
+lab,CVC
+tab,CVC
+nab,CVC
+jab,CVC
+sob,CVC
+rob,CVC
+job,CVC
+mop,CVC
+pop,CVC
+cop,CVC
+lop,CVC
+tub,CVC
+cub,CVC
+sub,CVC
+rub,CVC
+gum,CVC
+sum,CVC
+hum,CVC
+bun,CVC
+fun,CVC
+gun,CVC
+den,CVC
+leg,CVC
+peg,CVC
+beg,CVC
+keg,CVC
+wig,CVC
+big,CVC
+jug,CVC
+bug,CVC
+mug,CVC
+dug,CVC
+tag,CVC
+wag,CVC
+rag,CVC
+sag,CVC
+lag,CVC
+nap,CVC
+sap,CVC
+gap,CVC
+lap,CVC
+tap,CVC
+dip,CVC
+sip,CVC
+tip,CVC
+rip,CVC
+pet,CVC
+bet,CVC
+get,CVC
+let,CVC
+met,CVC
+set,CVC
+wet,CVC
+yet,CVC
+hot,CVC
+lot,CVC
+not,CVC
+rot,CVC
+cot,CVC
+got,CVC
+cob,CVC
+lob,CVC
+mob,CVC
+hub,CVC
+hug,CVC
+flag,Blending
+brush,Blending
+train,Blending
+clap,Blending
+drop,Blending
+trip,Blending
+frog,Blending
+plan,Blending
+slam,Blending
+grip,Blending
+drum,Blending
+plug,Blending
+block,Blending
+splash,Blending
+crash,Blending
+fresh,Blending
+blend,Blending
+black,Blending
+crack,Blending
+track,Blending
+brick,Blending
+stick,Blending
+pride,Blending
+crisp,Blending
+grab,Blending
+flip,Blending
+slip,Blending
+trap,Blending
+drip,Blending
+snap,Blending
+slap,Blending
+clip,Blending
+flap,Blending
+crab,Blending
+drag,Blending
+drift,Blending
+slim,Blending
+drill,Blending
+grin,Blending
+drank,Blending
+flop,Blending
+snip,Blending
+clot,Blending
+blot,Blending
+slob,Blending
+slid,Blending
+snag,Blending
+slug,Blending
+smog,Blending
+brag,Blending
+cram,Blending
+slum,Blending
+slush,Blending
+smash,Blending
+stash,Blending
+flash,Blending
+slash,Blending
+trash,Blending
+crush,Blending
+blush,Blending
+flush,Blending
+clash,Blending
+thrash,Blending
+crank,Blending
+thank,Blending
+shrug,Blending
+throb,Blending
+shrub,Blending
+shrill,Blending
+thrill,Blending
+strip,Blending
+strap,Blending
+straw,Blending
+string,Blending
+sprint,Blending
+scream,Blending
+stream,Blending
+strict,Blending
+street,Blending
+strong,Blending
+struck,Blending
+strike,Blending
+stripe,Blending
+strive,Blending
+stack,Blending
+stock,Blending
+stuck,Blending
+stomp,Blending
+stamp,Blending
+step,Blending
+stop,Blending
+snug,Blending
+snack,Blending
+snarl,Blending
+snore,Blending
+smile,Blending
+smoke,Blending
+knight,Silent Letter
+comb,Silent Letter
+hour,Silent Letter
+wrist,Silent Letter
+debt,Silent Letter
+gnome,Silent Letter
+island,Silent Letter
+doubt,Silent Letter
+psychic,Silent Letter
+honor,Silent Letter
+ghost,Silent Letter
+knife,Silent Letter
+subtle,Silent Letter
+lamb,Silent Letter
+thumb,Silent Letter
+plumber,Silent Letter
+answer,Silent Letter
+listen,Silent Letter
+half,Silent Letter
+calf,Silent Letter
+could,Silent Letter
+would,Silent Letter
+should,Silent Letter
+whistle,Silent Letter
+knob,Silent Letter
+wrap,Silent Letter
+write,Silent Letter
+wrong,Silent Letter
+wreck,Silent Letter
+wrestle,Silent Letter
+sword,Silent Letter
+know,Silent Letter
+gnat,Silent Letter
+knee,Silent Letter
+kneel,Silent Letter
+knock,Silent Letter
+knit,Silent Letter
+knack,Silent Letter
+knead,Silent Letter
+dumb,Silent Letter
+crumb,Silent Letter
+numb,Silent Letter
+tomb,Silent Letter
+climb,Silent Letter
+autumn,Silent Letter
+ballet,Silent Letter
+salmon,Silent Letter
+receipt,Silent Letter
+raspberry,Silent Letter
+castle,Silent Letter
+hustle,Silent Letter
+muscle,Silent Letter
+bustle,Silent Letter
+aisle,Silent Letter
+corps,Silent Letter
+yacht,Silent Letter
+align,Silent Letter
+design,Silent Letter
+foreign,Silent Letter
+heiress,Silent Letter
+monarch,Silent Letter
+colonel,Silent Letter
+honest,Silent Letter
+heir,Silent Letter
+ghastly,Silent Letter
+high,Silent Letter
+light,Silent Letter
+might,Silent Letter
+night,Silent Letter
+sight,Silent Letter
+tight,Silent Letter
+weigh,Silent Letter
+eight,Silent Letter
+height,Silent Letter
+freight,Silent Letter
+weight,Silent Letter
+sign,Silent Letter
+resign,Silent Letter
+assign,Silent Letter
+gnarl,Silent Letter
+gnash,Silent Letter
+gnaw,Silent Letter
+wrench,Silent Letter
+wretch,Silent Letter
+wring,Silent Letter
+wrinkle,Silent Letter
+wrath,Silent Letter
+wrought,Silent Letter
+wrote,Silent Letter
+fasten,Silent Letter
+rot,Phonics Merger
+not,Phonics Merger
+hat,Phonics Merger
+met,Phonics Merger
+got,Phonics Merger
+pit,Phonics Merger
+bet,Phonics Merger
+sit,Phonics Merger
+net,Phonics Merger
+mat,Phonics Merger
+pat,Phonics Merger
+fat,Phonics Merger
+lit,Phonics Merger
+kit,Phonics Merger
+cot,Phonics Merger
+dot,Phonics Merger
+pot,Phonics Merger
+hot,Phonics Merger
+log,Phonics Merger
+dog,Phonics Merger
+hop,Phonics Merger
+top,Phonics Merger
+cop,Phonics Merger
+mop,Phonics Merger
+cat,Phonics Merger
+bat,Phonics Merger
+rat,Phonics Merger
+sat,Phonics Merger
+cap,Phonics Merger
+lap,Phonics Merger
+map,Phonics Merger
+tap,Phonics Merger
+gap,Phonics Merger
+nap,Phonics Merger
+sip,Phonics Merger
+zip,Phonics Merger
+rip,Phonics Merger
+tip,Phonics Merger
+lip,Phonics Merger
+dip,Phonics Merger
+red,Phonics Merger
+bed,Phonics Merger
+led,Phonics Merger
+fed,Phonics Merger
+ten,Phonics Merger
+men,Phonics Merger
+pen,Phonics Merger
+den,Phonics Merger
+win,Phonics Merger
+tin,Phonics Merger
+fin,Phonics Merger
+kin,Phonics Merger
+pin,Phonics Merger
+bin,Phonics Merger
+sun,Phonics Merger
+fun,Phonics Merger
+run,Phonics Merger
+bun,Phonics Merger
+gun,Phonics Merger
+hut,Phonics Merger
+cut,Phonics Merger
+nut,Phonics Merger
+but,Phonics Merger
+mud,Phonics Merger
+bud,Phonics Merger
+jug,Phonics Merger
+rug,Phonics Merger
+hug,Phonics Merger
+dug,Phonics Merger
+big,Phonics Merger
+dig,Phonics Merger
+fig,Phonics Merger
+wig,Phonics Merger
+pig,Phonics Merger
+leg,Phonics Merger
+beg,Phonics Merger
+peg,Phonics Merger
+keg,Phonics Merger
+bag,Phonics Merger
+rag,Phonics Merger
+wag,Phonics Merger
+tag,Phonics Merger
+lag,Phonics Merger
+nag,Phonics Merger
+sob,Phonics Merger
+rob,Phonics Merger
+job,Phonics Merger
+cob,Phonics Merger
+lob,Phonics Merger
+mob,Phonics Merger
+cub,Phonics Merger
+rub,Phonics Merger
+sub,Phonics Merger
+hub,Phonics Merger
+yak,Phonics Merger
+vet,Phonics Merger
+wax,Phonics Merger
+jet,Phonics Merger
+web,Phonics Merger
+mad,Phonics Merger
+sad,Phonics Merger
+pad,Phonics Merger
+lad,Phonics Merger
+bad,Phonics Merger
+dad,Phonics Merger
+fad,Phonics Merger
+had,Phonics Merger
+jam,Phonics Merger
+ham,Phonics Merger
+ram,Phonics Merger
+yam,Phonics Merger
+bam,Phonics Merger
+cam,Phonics Merger
+clam,Phonics Merger
+dram,Phonics Merger
+tram,Phonics Merger
+gram,Phonics Merger
+spam,Phonics Merger
+fan,CVC
+box,CVC
+run,CVC
+lip,CVC
+log,CVC
+cat,CVC
+red,CVC
+top,CVC
+hat,CVC
+dog,CVC
+red,CVC
+red,CVC
+web,CVC
+log,CVC
+web,CVC
+man,CVC
+dog,CVC
+top,CVC
+sun,CVC
+dog,CVC
+cat,CVC
+cat,CVC
+hat,CVC
+top,CVC
+log,CVC
+run,CVC
+sun,CVC
+top,CVC
+log,CVC
+hat,CVC
+hat,CVC
+red,CVC
+jam,CVC
+nut,CVC
+run,CVC
+red,CVC
+cup,CVC
+nut,CVC
+red,CVC
+top,CVC
+map,CVC
+map,CVC
+pig,CVC
+pig,CVC
+cat,CVC
+nut,CVC
+lip,CVC
+top,CVC
+pen,CVC
+sun,CVC
+bed,CVC
+pig,CVC
+hat,CVC
+hat,CVC
+box,CVC
+pen,CVC
+red,CVC
+box,CVC
+web,CVC
+jam,CVC
+fan,CVC
+cup,CVC
+pig,CVC
+dog,CVC
+box,CVC
+nut,CVC
+run,CVC
+man,CVC
+run,CVC
+cat,CVC
+man,CVC
+red,CVC
+run,CVC
+top,CVC
+log,CVC
+bed,CVC
+sun,CVC
+cat,CVC
+nut,CVC
+bed,CVC
+cat,CVC
+box,CVC
+hat,CVC
+nut,CVC
+cat,CVC
+jam,CVC
+cup,CVC
+pen,CVC
+cup,CVC
+pen,CVC
+box,CVC
+red,CVC
+run,CVC
+sun,CVC
+man,CVC
+run,CVC
+sun,CVC
+sun,CVC
+run,CVC
+bed,CVC
+top,CVC
+man,CVC
+web,CVC
+web,CVC
+top,CVC
+jam,CVC
+box,CVC
+lip,CVC
+red,CVC
+web,CVC
+bed,CVC
+dog,CVC
+man,CVC
+fan,CVC
+hat,CVC
+bed,CVC
+box,CVC
+web,CVC
+hat,CVC
+red,CVC
+cat,CVC
+log,CVC
+jam,CVC
+cat,CVC
+hat,CVC
+cup,CVC
+man,CVC
+map,CVC
+run,CVC
+cup,CVC
+jam,CVC
+map,CVC
+hat,CVC
+pig,CVC
+map,CVC
+cat,CVC
+top,CVC
+nut,CVC
+cup,CVC
+sun,CVC
+pen,CVC
+web,CVC
+log,CVC
+hat,CVC
+lip,CVC
+web,CVC
+red,CVC
+sun,CVC
+map,CVC
+box,CVC
+nut,CVC
+lip,CVC
+nut,CVC
+hat,CVC
+cat,CVC
+man,CVC
+cat,CVC
+run,CVC
+cup,CVC
+hat,CVC
+dog,CVC
+pig,CVC
+run,CVC
+web,CVC
+top,CVC
+pen,CVC
+bed,CVC
+hat,CVC
+run,CVC
+web,CVC
+man,CVC
+cup,CVC
+web,CVC
+nut,CVC
+pen,CVC
+web,CVC
+lip,CVC
+sun,CVC
+pig,CVC
+cup,CVC
+lip,CVC
+jam,CVC
+man,CVC
+log,CVC
+man,CVC
+pen,CVC
+top,CVC
+cup,CVC
+web,CVC
+red,CVC
+nut,CVC
+map,CVC
+dog,CVC
+lip,CVC
+cup,CVC
+web,CVC
+hat,CVC
+box,CVC
+pig,CVC
+cup,CVC
+life,Blending
+star,Blending
+life,Blending
+test,Blending
+star,Blending
+word,Blending
+star,Blending
+love,Blending
+word,Blending
+test,Blending
+test,Blending
+test,Blending
+goal,Blending
+work,Blending
+play,Blending
+star,Blending
+work,Blending
+word,Blending
+hope,Blending
+goal,Blending
+word,Blending
+love,Blending
+hope,Blending
+love,Blending
+goal,Blending
+love,Blending
+goal,Blending
+star,Blending
+hope,Blending
+play,Blending
+word,Blending
+test,Blending
+star,Blending
+hope,Blending
+word,Blending
+goal,Blending
+play,Blending
+love,Blending
+hope,Blending
+goal,Blending
+love,Blending
+time,Blending
+word,Blending
+play,Blending
+work,Blending
+play,Blending
+star,Blending
+word,Blending
+word,Blending
+life,Blending
+word,Blending
+star,Blending
+test,Blending
+goal,Blending
+time,Blending
+life,Blending
+test,Blending
+word,Blending
+time,Blending
+work,Blending
+time,Blending
+goal,Blending
+star,Blending
+word,Blending
+word,Blending
+time,Blending
+word,Blending
+word,Blending
+play,Blending
+time,Blending
+play,Blending
+life,Blending
+hope,Blending
+star,Blending
+test,Blending
+love,Blending
+life,Blending
+time,Blending
+hope,Blending
+love,Blending
+goal,Blending
+life,Blending
+play,Blending
+word,Blending
+life,Blending
+work,Blending
+star,Blending
+hope,Blending
+word,Blending
+time,Blending
+test,Blending
+word,Blending
+life,Blending
+test,Blending
+love,Blending
+work,Blending
+test,Blending
+time,Blending
+goal,Blending
+word,Blending
+word,Blending
+play,Blending
+play,Blending
+test,Blending
+play,Blending
+play,Blending
+work,Blending
+work,Blending
+work,Blending
+test,Blending
+word,Blending
+word,Blending
+hope,Blending
+work,Blending
+test,Blending
+time,Blending
+star,Blending
+goal,Blending
+word,Blending
+life,Blending
+star,Blending
+hope,Blending
+word,Blending
+test,Blending
+star,Blending
+hope,Blending
+star,Blending
+hope,Blending
+hope,Blending
+work,Blending
+love,Blending
+goal,Blending
+time,Blending
+hope,Blending
+work,Blending
+play,Blending
+word,Blending
+word,Blending
+love,Blending
+time,Blending
+play,Blending
+work,Blending
+work,Blending
+life,Blending
+play,Blending
+hope,Blending
+love,Blending
+hope,Blending
+work,Blending
+word,Blending
+hope,Blending
+time,Blending
+test,Blending
+word,Blending
+life,Blending
+time,Blending
+play,Blending
+goal,Blending
+play,Blending
+goal,Blending
+life,Blending
+play,Blending
+work,Blending
+play,Blending
+goal,Blending
+test,Blending
+test,Blending
+play,Blending
+test,Blending
+love,Blending
+word,Blending
+life,Blending
+time,Blending
+goal,Blending
+love,Blending
+star,Blending
+life,Blending
+word,Blending
+star,Blending
+work,Blending
+goal,Blending
+test,Blending
+word,Blending
+work,Blending
+star,Blending
+star,Blending
+love,Blending
+test,Blending
+goal,Blending
+time,Blending
+time,Blending
+play,Blending
+time,Blending
+play,Blending
+star,Blending
+star,Blending
+life,Blending
+hope,Blending
+life,Blending
+test,Blending
+test,Silent Letter
+goal,Silent Letter
+love,Silent Letter
+word,Silent Letter
+love,Silent Letter
+play,Silent Letter
+life,Silent Letter
+life,Silent Letter
+work,Silent Letter
+star,Silent Letter
+goal,Silent Letter
+time,Silent Letter
+time,Silent Letter
+test,Silent Letter
+play,Silent Letter
+goal,Silent Letter
+star,Silent Letter
+play,Silent Letter
+love,Silent Letter
+hope,Silent Letter
+time,Silent Letter
+play,Silent Letter
+hope,Silent Letter
+work,Silent Letter
+test,Silent Letter
+life,Silent Letter
+test,Silent Letter
+goal,Silent Letter
+test,Silent Letter
+hope,Silent Letter
+test,Silent Letter
+hope,Silent Letter
+work,Silent Letter
+word,Silent Letter
+hope,Silent Letter
+life,Silent Letter
+play,Silent Letter
+life,Silent Letter
+hope,Silent Letter
+word,Silent Letter
+work,Silent Letter
+time,Silent Letter
+time,Silent Letter
+love,Silent Letter
+goal,Silent Letter
+play,Silent Letter
+star,Silent Letter
+work,Silent Letter
+life,Silent Letter
+work,Silent Letter
+star,Silent Letter
+hope,Silent Letter
+word,Silent Letter
+work,Silent Letter
+goal,Silent Letter
+love,Silent Letter
+test,Silent Letter
+hope,Silent Letter
+life,Silent Letter
+play,Silent Letter
+time,Silent Letter
+love,Silent Letter
+play,Silent Letter
+life,Silent Letter
+play,Silent Letter
+life,Silent Letter
+test,Silent Letter
+star,Silent Letter
+goal,Silent Letter
+life,Silent Letter
+work,Silent Letter
+hope,Silent Letter
+life,Silent Letter
+work,Silent Letter
+hope,Silent Letter
+play,Silent Letter
+work,Silent Letter
+hope,Silent Letter
+love,Silent Letter
+star,Silent Letter
+life,Silent Letter
+love,Silent Letter
+work,Silent Letter
+time,Silent Letter
+goal,Silent Letter
+love,Silent Letter
+play,Silent Letter
+work,Silent Letter
+word,Silent Letter
+time,Silent Letter
+play,Silent Letter
+love,Silent Letter
+life,Silent Letter
+goal,Silent Letter
+play,Silent Letter
+love,Silent Letter
+test,Silent Letter
+life,Silent Letter
+love,Silent Letter
+test,Silent Letter
+hope,Silent Letter
+goal,Silent Letter
+goal,Silent Letter
+life,Silent Letter
+word,Silent Letter
+love,Silent Letter
+word,Silent Letter
+hope,Silent Letter
+work,Silent Letter
+word,Silent Letter
+star,Silent Letter
+time,Silent Letter
+word,Silent Letter
+goal,Silent Letter
+life,Silent Letter
+love,Silent Letter
+play,Silent Letter
+word,Silent Letter
+play,Silent Letter
+work,Silent Letter
+goal,Silent Letter
+time,Silent Letter
+goal,Silent Letter
+word,Silent Letter
+love,Silent Letter
+time,Silent Letter
+goal,Silent Letter
+test,Silent Letter
+test,Silent Letter
+work,Silent Letter
+star,Silent Letter
+word,Silent Letter
+work,Silent Letter
+work,Silent Letter
+work,Silent Letter
+work,Silent Letter
+love,Silent Letter
+time,Silent Letter
+love,Silent Letter
+time,Silent Letter
+hope,Silent Letter
+word,Silent Letter
+hope,Silent Letter
+test,Silent Letter
+test,Silent Letter
+test,Silent Letter
+star,Silent Letter
+love,Silent Letter
+star,Silent Letter
+hope,Silent Letter
+play,Silent Letter
+life,Silent Letter
+word,Silent Letter
+time,Silent Letter
+hope,Silent Letter
+star,Silent Letter
+goal,Silent Letter
+work,Silent Letter
+star,Silent Letter
+test,Silent Letter
+hope,Silent Letter
+goal,Silent Letter
+love,Silent Letter
+test,Silent Letter
+time,Silent Letter
+love,Silent Letter
+word,Silent Letter
+word,Silent Letter
+time,Silent Letter
+play,Silent Letter
+goal,Silent Letter
+play,Silent Letter
+love,Silent Letter
+hope,Silent Letter
+word,Silent Letter
+work,Silent Letter
+test,Silent Letter
+work,Silent Letter
+star,Silent Letter
+play,Silent Letter
+star,Silent Letter
+star,Silent Letter
+play,Silent Letter
+star,Silent Letter
+life,Silent Letter
+goal,Silent Letter
+word,Silent Letter
+hope,Silent Letter
+love,Silent Letter
+play,Silent Letter
+word,Silent Letter
+play,Silent Letter
+word,Silent Letter
+star,Silent Letter
+time,Silent Letter
+word,Silent Letter
+love,Silent Letter
+goal,Silent Letter
+test,Silent Letter
+test,Silent Letter
+goal,Phonics Merger
+time,Phonics Merger
+love,Phonics Merger
+test,Phonics Merger
+work,Phonics Merger
+life,Phonics Merger
+goal,Phonics Merger
+star,Phonics Merger
+star,Phonics Merger
+goal,Phonics Merger
+star,Phonics Merger
+time,Phonics Merger
+life,Phonics Merger
+hope,Phonics Merger
+play,Phonics Merger
+star,Phonics Merger
+word,Phonics Merger
+hope,Phonics Merger
+word,Phonics Merger
+work,Phonics Merger
+love,Phonics Merger
+life,Phonics Merger
+goal,Phonics Merger
+work,Phonics Merger
+star,Phonics Merger
+work,Phonics Merger
+star,Phonics Merger
+love,Phonics Merger
+love,Phonics Merger
+life,Phonics Merger
+hope,Phonics Merger
+hope,Phonics Merger
+hope,Phonics Merger
+time,Phonics Merger
+play,Phonics Merger
+love,Phonics Merger
+test,Phonics Merger
+hope,Phonics Merger
+time,Phonics Merger
+time,Phonics Merger
+word,Phonics Merger
+goal,Phonics Merger
+word,Phonics Merger
+love,Phonics Merger
+goal,Phonics Merger
+work,Phonics Merger
+time,Phonics Merger
+work,Phonics Merger
+time,Phonics Merger
+hope,Phonics Merger
+life,Phonics Merger
+work,Phonics Merger
+play,Phonics Merger
+word,Phonics Merger
+goal,Phonics Merger
+play,Phonics Merger
+test,Phonics Merger
+hope,Phonics Merger
+hope,Phonics Merger
+play,Phonics Merger
+hope,Phonics Merger
+play,Phonics Merger
+star,Phonics Merger
+time,Phonics Merger
+time,Phonics Merger
+test,Phonics Merger
+love,Phonics Merger
+life,Phonics Merger
+play,Phonics Merger
+life,Phonics Merger
+love,Phonics Merger
+star,Phonics Merger
+work,Phonics Merger
+play,Phonics Merger
+goal,Phonics Merger
+test,Phonics Merger
+life,Phonics Merger
+star,Phonics Merger
+test,Phonics Merger
+life,Phonics Merger
+work,Phonics Merger
+test,Phonics Merger
+life,Phonics Merger
+time,Phonics Merger
+play,Phonics Merger
+hope,Phonics Merger
+hope,Phonics Merger
+play,Phonics Merger
+test,Phonics Merger
+love,Phonics Merger
+life,Phonics Merger
+test,Phonics Merger
+goal,Phonics Merger
+play,Phonics Merger
+play,Phonics Merger
+play,Phonics Merger
+hope,Phonics Merger
+star,Phonics Merger
+word,Phonics Merger
+test,Phonics Merger
+work,Phonics Merger
+life,Phonics Merger
+goal,Phonics Merger
+time,Phonics Merger
+play,Phonics Merger
+word,Phonics Merger
+life,Phonics Merger
+test,Phonics Merger
+work,Phonics Merger
+play,Phonics Merger
+hope,Phonics Merger
+test,Phonics Merger
+word,Phonics Merger
+goal,Phonics Merger
+hope,Phonics Merger
+play,Phonics Merger
+time,Phonics Merger
+star,Phonics Merger
+star,Phonics Merger
+goal,Phonics Merger
+goal,Phonics Merger
+test,Phonics Merger
+word,Phonics Merger
+word,Phonics Merger
+hope,Phonics Merger
+test,Phonics Merger
+time,Phonics Merger
+goal,Phonics Merger
+life,Phonics Merger
+time,Phonics Merger
+life,Phonics Merger
+word,Phonics Merger
+test,Phonics Merger
+word,Phonics Merger
+hope,Phonics Merger
+test,Phonics Merger
+hope,Phonics Merger
+goal,Phonics Merger
+love,Phonics Merger
+love,Phonics Merger
+star,Phonics Merger
+star,Phonics Merger
+play,Phonics Merger
+work,Phonics Merger
+life,Phonics Merger
+goal,Phonics Merger
+work,Phonics Merger
+love,Phonics Merger
+time,Phonics Merger
+love,Phonics Merger
+hope,Phonics Merger
+play,Phonics Merger
+star,Phonics Merger
+hope,Phonics Merger
+work,Phonics Merger
+life,Phonics Merger
+hope,Phonics Merger
+star,Phonics Merger
+time,Phonics Merger
+word,Phonics Merger
+life,Phonics Merger
+hope,Phonics Merger
+play,Phonics Merger
+star,Phonics Merger
+work,Phonics Merger
+star,Phonics Merger
+life,Phonics Merger
+star,Phonics Merger
+test,Phonics Merger
+work,Phonics Merger
+play,Phonics Merger
+time,Phonics Merger
+time,Phonics Merger
+life,Phonics Merger
+test,Phonics Merger
+love,Phonics Merger
+hope,Phonics Merger
+test,Phonics Merger
+hope,Phonics Merger
+time,Phonics Merger
+test,Phonics Merger
+goal,Phonics Merger
+word,Phonics Merger
+word,Phonics Merger
+play,Phonics Merger
+love,Phonics Merger
+word,Phonics Merger
+star,Phonics Merger
+star,Phonics Merger
+work,Phonics Merger
+hope,Phonics Merger
+star,Phonics Merger
+goal,Phonics Merger
+word,Phonics Merger
+star,Phonics Merger
+life,Phonics Merger
+time,Phonics Merger
+hope,Phonics Merger
+work,Phonics Merger
+star,Phonics Merger

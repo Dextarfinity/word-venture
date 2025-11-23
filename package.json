@@ -1,0 +1,49 @@
+{
+  "name": "word-venture",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:e2e": "cypress run",
+    "test:unit": "vitest",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@capacitor-community/speech-recognition": "^7.0.1",
+    "@capacitor/android": "^7.4.0",
+    "@capacitor/app": "7.0.1",
+    "@capacitor/core": "7.4.0",
+    "@capacitor/haptics": "7.0.1",
+    "@capacitor/keyboard": "7.0.1",
+    "@capacitor/status-bar": "7.0.1",
+    "@ionic/vue": "^8.6.2",
+    "@ionic/vue-router": "^8.6.2",
+    "@supabase/supabase-js": "^2.50.1",
+    "@tailwindcss/vite": "^4.1.10",
+    "cordova-plugin-speechrecognition": "^1.2.0",
+    "ionicons": "^7.0.0",
+    "papaparse": "^5.5.3",
+    "tailwindcss": "^4.1.10",
+    "vosk-browser": "^0.0.8",
+    "vue": "^3.3.0",
+    "vue-router": "^4.2.0",
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.4.0",
+    "@vitejs/plugin-legacy": "^5.0.0",
+    "@vitejs/plugin-vue": "^4.0.0",
+    "@vue/test-utils": "^2.3.0",
+    "cypress": "^13.5.0",
+    "eslint": "^8.35.0",
+    "eslint-plugin-vue": "^9.9.0",
+    "jsdom": "^22.1.0",
+    "terser": "^5.43.1",
+    "vite": "~5.2.0",
+    "vitest": "^0.34.6"
+  },
+  "description": "An Ionic project"
+}

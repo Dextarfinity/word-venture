@@ -1,0 +1,24 @@
+/* For information on how to create your own theme, please see:
+http://ionicframework.com/docs/theming/ */
+@import url('https://fonts.googleapis.com/css2?family=Jua&display=swap');
+@import "tailwindcss";
+
+/* Set Jua as the default font family */
+* {
+  font-family: 'Jua', cursive !important;
+}
+
+/* Ensure input placeholders also use Jua font */
+ion-input {
+  --placeholder-font-family: 'Jua', cursive !important;
+}
+
+/* Ensure buttons use Jua font */
+ion-button {
+  font-family: 'Jua', cursive !important;
+}
+
+/* Ensure all text elements use Jua font */
+h1, h2, h3, h4, h5, h6, p, span, div, label {
+  font-family: 'Jua', cursive !important;
+}

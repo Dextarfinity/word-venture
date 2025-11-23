@@ -1,0 +1,7 @@
+{
+  "name": "WordVenture",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite"
+}
