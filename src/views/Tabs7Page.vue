@@ -8,6 +8,8 @@ import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
 import QuizPrompt from "../components/QuizPrompt.vue";
 import QuizModal from "../components/QuizModal.vue";
 import QuizResultsModal from "../components/QuizResultsModal.vue";
+import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import { Capacitor } from "@capacitor/core";
 
 // Router instance
 const router = useRouter();
@@ -42,8 +44,11 @@ const usingOffline = ref(false);
 const isOnline = ref(navigator.onLine);
 const connectivityChecked = ref(false);
 const speechSystemReady = ref(false);
-const activeRecognitionSystem = ref(null); // Track which system is active: 'webspeech' or 'vosk'
+const activeRecognitionSystem = ref(null); // Track which system is active: 'native', 'vosk', or 'webspeech'
 let voskRecognizer = null;
+
+// 🔹 Platform detection
+const isNativePlatform = Capacitor.isNativePlatform();
 
 // ✅ Check internet connectivity for 5 seconds
 const checkConnectivity = async () => {
@@ -270,68 +275,102 @@ let model, recognizer;
 let audioContext, processor, stream, resultPollingInterval;
 
 const initSpeech = async () => {
+  console.log("🎤 Initializing speech recognition with fallback chain...");
+
+  if (isNativePlatform) {
+    console.log("📱 Native platform detected - trying Capacitor Speech Recognition");
+    await initNativeSpeechRecognition();
+    if (!speechSystemReady.value) {
+      console.log("⚠️ Native speech recognition failed, trying Vosk fallback");
+      await initVoskFallback();
+    }
+    if (!speechSystemReady.value) {
+      console.log("⚠️ Vosk fallback failed, trying Web Speech API");
+      await initWebSpeechFallback();
+    }
+  } else {
+    console.log("💻 Web platform detected - trying Vosk then Web Speech API");
+    // Try Vosk first for offline capability
+    await initVoskFallback();
+    if (!speechSystemReady.value) {
+      console.log("⚠️ Vosk initialization failed, trying Web Speech API");
+      await initWebSpeechFallback();
+    }
+  }
+
+  if (!speechSystemReady.value) {
+    console.error("❌ All speech recognition methods failed!");
+  }
+};
+
+// Native speech recognition initialization for mobile
+const initNativeSpeechRecognition = async () => {
   try {
-    // 🔹 Check if we've already determined connectivity status
-    if (!connectivityChecked.value) {
-      console.log("⏳ Waiting for connectivity check to complete...");
+    console.log("🎤 Initializing native (Capacitor) speech recognition");
+
+    // Check if speech recognition is available
+    const available = await SpeechRecognition.available();
+    if (!available) {
+      console.warn("⚠️ Speech recognition not available on this device");
       return;
     }
 
-    // 🔹 Use connectivity status to decide which mode to initialize
-    if (isOnline.value && "webkitSpeechRecognition" in window) {
-      console.log("🎤 Using Web Speech API (online mode)");
-      usingOffline.value = false;
-
-      recognition.value = new webkitSpeechRecognition();
-      recognition.value.lang = "tl-PH"; // Filipino/Tagalog Philippines
-      recognition.value.continuous = true;
-      recognition.value.interimResults = true;
-
-      recognition.value.onresult = (event) => {
-        const lastResult = event.results[event.results.length - 1];
-        const transcript = lastResult[0].transcript.trim().toLowerCase();
-        checkWord(transcript, lastResult.isFinal);
-      };
-
-      recognition.value.onend = () => {
-        // Only restart if we're still listening and in online mode
-        if (
-          listening.value &&
-          currentWordIndex.value < storyWords.value.length &&
-          !usingOffline.value
-        ) {
-          recognition.value.start();
-        }
-      };
-
-      recognition.value.onerror = (event) => {
-        console.error("🚫 Web Speech API error:", event.error);
-        // Only fallback to Vosk if we haven't already switched to offline mode
-        if (!usingOffline.value && event.error === "network") {
-          console.log("🔄 Network error detected, switching to offline mode");
-          initVoskFallback();
-        }
-      };
-
-      speechSystemReady.value = true;
-      activeRecognitionSystem.value = 'webspeech';
-      console.log("✅ Web Speech API initialized successfully");
-    } else {
-      // 🔹 No internet or Web Speech API not available, use Vosk
-      console.log(
-        `🎤 ${
-          !isOnline.value ? "Offline mode detected" : "Web Speech API not available"
-        }, using Vosk`
-      );
-      await initVoskFallback();
+    // Request permissions
+    const { granted } = await SpeechRecognition.requestPermissions();
+    if (!granted) {
+      console.warn("⚠️ Speech recognition permissions not granted");
+      return;
     }
+
+    speechSystemReady.value = true;
+    activeRecognitionSystem.value = 'native';
+    console.log("✅ Native speech recognition ready (Capacitor)");
   } catch (error) {
-    console.error("🚫 Speech recognition initialization failed:", error);
-    // Try offline fallback as last resort
-    if (!usingOffline.value) {
-      console.log("🔄 Attempting offline fallback after initialization error");
-      await initVoskFallback();
+    console.warn("⚠️ Native speech recognition initialization failed:", error);
+    speechSystemReady.value = false;
+  }
+};
+
+// Web Speech API fallback
+const initWebSpeechFallback = async () => {
+  try {
+    console.log("🎤 Initializing Web Speech API");
+
+    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognitionAPI) {
+      console.warn("⚠️ Web Speech API not available in this browser");
+      return false;
     }
+
+    recognition.value = new SpeechRecognitionAPI();
+    recognition.value.lang = "tl-PH"; // Filipino/Tagalog Philippines
+    recognition.value.continuous = true;
+    recognition.value.interimResults = true;
+
+    recognition.value.onresult = (event) => {
+      const lastResult = event.results[event.results.length - 1];
+      const transcript = lastResult[0].transcript.trim().toLowerCase();
+      checkWord(transcript, lastResult.isFinal);
+    };
+
+    recognition.value.onend = () => {
+      // Only restart if we're still listening
+      if (listening.value && currentWordIndex.value < storyWords.value.length) {
+        recognition.value.start();
+      }
+    };
+
+    recognition.value.onerror = (event) => {
+      console.warn("⚠️ Web Speech API error:", event.error);
+    };
+
+    speechSystemReady.value = true;
+    activeRecognitionSystem.value = 'webspeech';
+    console.log("✅ Web Speech API initialized successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to initialize Web Speech API:", error);
+    return false;
   }
 };
 

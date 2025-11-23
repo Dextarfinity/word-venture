@@ -260,6 +260,11 @@ const pendingRepetitions = ref([]);
 
 // Platform detection
 const isNativePlatform = Capacitor.isNativePlatform();
+let speechSystemReady = ref(false);
+let audioContext = null;
+let scriptProcessor = null;
+let mediaStream = null;
+let recognizer = null;
 
 // Helper function to get user ID with fallback
 const getUserId = async () => {
@@ -398,56 +403,89 @@ const speakWord = (word) => {
 
 // Initialize speech recognition
 const initSpeechRecognition = () => {
-  // For native platforms, check permissions
+  console.log("🎤 Initializing speech recognition with fallback chain...");
+
   if (isNativePlatform) {
+    console.log("📱 Native platform detected - using Capacitor Speech Recognition");
+    initNativeSpeechRecognition();
+    if (!speechSystemReady.value) {
+      console.log("⚠️ Native speech recognition failed, trying Web Speech API fallback");
+      initWebSpeechAPI();
+    }
+  } else {
+    console.log("💻 Web platform detected - using Web Speech API");
+    initWebSpeechAPI();
+  }
+};
+
+// Native speech recognition initialization for mobile
+const initNativeSpeechRecognition = () => {
+  try {
+    console.log("🎤 Initializing native (Capacitor) speech recognition");
+
     SpeechRecognition.checkPermissions().then(({ speechRecognition }) => {
       if (speechRecognition === 'granted') {
         console.log('✅ Speech recognition permission granted');
+        speechSystemReady.value = true;
       } else {
         console.log('⚠️ Speech recognition permission not granted, will request on use');
       }
     });
-    return;
+  } catch (error) {
+    console.warn("⚠️ Native speech recognition initialization failed:", error);
+    speechSystemReady.value = false;
   }
+};
 
-  // For web, use Web Speech API
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+// Web Speech API initialization
+const initWebSpeechAPI = () => {
+  try {
+    console.log("🎤 Initializing Web Speech API");
 
-  if (!SpeechRecognition) {
-    console.warn("Speech recognition not supported in this browser");
-    return;
-  }
+    const WebSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-  recognition = new SpeechRecognition();
-  recognition.lang = "en-US";
-  recognition.interimResults = false;
-  recognition.continuous = false;
-
-  recognition.onresult = (event) => {
-    const transcript = event.results[0][0].transcript.trim();
-    console.log("🎤 Heard:", transcript);
-    isProcessing.value = true;
-
-    setTimeout(async () => {
-      await checkWord(transcript);
-      isProcessing.value = false;
-    }, 500);
-  };
-
-  recognition.onerror = (event) => {
-    console.error("Speech recognition error:", event.error);
-    isListening.value = false;
-    isProcessing.value = false;
-  };
-
-  recognition.onend = () => {
-    isListening.value = false;
-    if (isProcessing.value) {
-      setTimeout(() => {
-        isProcessing.value = false;
-      }, 1000);
+    if (!WebSpeechRecognition) {
+      console.warn("⚠️ Web Speech API not available in this browser");
+      return;
     }
-  };
+
+    recognition = new WebSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+
+    recognition.onresult = (event) => {
+      const transcript = event.results[0][0].transcript.trim();
+      console.log("🎤 Heard:", transcript);
+      isProcessing.value = true;
+
+      setTimeout(async () => {
+        await checkWord(transcript);
+        isProcessing.value = false;
+      }, 500);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      isListening.value = false;
+      isProcessing.value = false;
+    };
+
+    recognition.onend = () => {
+      isListening.value = false;
+      if (isProcessing.value) {
+        setTimeout(() => {
+          isProcessing.value = false;
+        }, 1000);
+      }
+    };
+
+    speechSystemReady.value = true;
+    console.log("✅ Web Speech API initialized successfully");
+  } catch (error) {
+    console.error("❌ Failed to initialize Web Speech API:", error);
+    speechSystemReady.value = false;
+  }
 };
 
 // Toggle microphone
