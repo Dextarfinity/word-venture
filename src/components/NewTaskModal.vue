@@ -3,129 +3,145 @@
     <div v-if="isOpen" class="modal-overlay" @click="closeModal">
       <Transition name="modal-scale" appear>
         <div v-if="isOpen" class="modal-card" @click.stop>
-      <!-- Header with NEW TASK badge -->
-      <div class="modal-header">
-        <div class="new-task-badge">
-          <span class="badge-text">NEW TASK</span>
-        </div>
-      </div>
+          <!-- Header with NEW TASK badge -->
+          <div class="modal-header">
+            <div class="new-task-badge">
+              <span class="badge-text">NEW TASK</span>
+            </div>
+          </div>
 
-      <!-- Category Selection -->
-      <div class="category-section">
-        <div class="category-label">CATEGORY</div>
-        <div class="category-dropdown-container">
-          <select v-model="selectedCategory" class="category-dropdown" @change="onCategoryChange">
-            <option value="">SELECT---</option>
-            <option 
-              v-for="category in availableCategories" 
-              :key="category.value" 
-              :value="category.value"
-              :disabled="category.disabled"
+          <!-- Category Selection -->
+          <div class="category-section">
+            <div class="category-label">CATEGORY</div>
+            <div class="category-dropdown-container">
+              <select
+                v-model="selectedCategory"
+                class="category-dropdown"
+                @change="onCategoryChange"
+              >
+                <option value="">SELECT---</option>
+                <option
+                  v-for="category in availableCategories"
+                  :key="category.value"
+                  :value="category.value"
+                  :disabled="category.disabled"
+                >
+                  {{ category.label
+                  }}{{
+                    category.disabled ? " (Not available - reading level too low)" : ""
+                  }}
+                </option>
+              </select>
+            </div>
+            <div v-if="classroomReadingInfo.maxLevel" class="reading-level-info">
+              <p class="level-info-text">
+                Classroom highest reading level:
+                <strong>{{ getReadingLevelName(classroomReadingInfo.maxLevel) }}</strong>
+              </p>
+              <p v-if="classroomReadingInfo.minLevel === 1" class="warning-text">
+                ⚠️ Warning: Classroom has non-readers. Consider their reading abilities
+                when creating tasks.
+              </p>
+            </div>
+          </div>
+
+          <!-- Task Details Section (shown when category is selected) -->
+          <div v-if="selectedCategory" class="task-details-section">
+            <div class="form-field">
+              <label class="field-label">TASK TITLE</label>
+              <input
+                type="text"
+                placeholder="Enter task title"
+                class="form-input"
+                v-model="taskData.title"
+              />
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">DUE DATE</label>
+              <input type="date" class="form-input" v-model="taskData.dueDate" />
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">PRIORITY</label>
+              <select v-model="taskData.priority" class="form-input">
+                <option value="low">Low Priority</option>
+                <option value="medium">Medium Priority</option>
+                <option value="high">High Priority</option>
+              </select>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">INSTRUCTIONS</label>
+              <textarea
+                placeholder="Enter task instructions"
+                class="form-textarea"
+                v-model="taskData.instructions"
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button
+              class="back-btn"
+              @click="
+                playClick('teacher');
+                closeModal();
+              "
             >
-              {{ category.label }}{{ category.disabled ? ' (Not available - reading level too low)' : '' }}
-            </option>
-          </select>
-        </div>
-        <div v-if="classroomReadingInfo.maxLevel" class="reading-level-info">
-          <p class="level-info-text">
-            Classroom highest reading level: <strong>{{ getReadingLevelName(classroomReadingInfo.maxLevel) }}</strong>
-          </p>
-          <p v-if="classroomReadingInfo.minLevel === 1" class="warning-text">
-            ⚠️ Warning: Classroom has non-readers. Consider their reading abilities when creating tasks.
-          </p>
-        </div>
-      </div>
-
-      <!-- Task Details Section (shown when category is selected) -->
-      <div v-if="selectedCategory" class="task-details-section">
-        <div class="form-field">
-          <label class="field-label">TASK TITLE</label>
-          <input
-            type="text"
-            placeholder="Enter task title"
-            class="form-input"
-            v-model="taskData.title"
-          />
-        </div>
-
-        <div class="form-field">
-          <label class="field-label">DUE DATE</label>
-          <input
-            type="date"
-            class="form-input"
-            v-model="taskData.dueDate"
-          />
-        </div>
-
-        <div class="form-field">
-          <label class="field-label">PRIORITY</label>
-          <select v-model="taskData.priority" class="form-input">
-            <option value="low">Low Priority</option>
-            <option value="medium">Medium Priority</option>
-            <option value="high">High Priority</option>
-          </select>
-        </div>
-
-        <div class="form-field">
-          <label class="field-label">INSTRUCTIONS</label>
-          <textarea
-            placeholder="Enter task instructions"
-            class="form-textarea"
-            v-model="taskData.instructions"
-            rows="3"
-          ></textarea>
-        </div>
-      </div>
-
-      <!-- Action Buttons -->
-      <div class="action-buttons">
-        <button class="back-btn" @click="playClick('teacher'); closeModal()">
-          <span class="btn-text">BACK</span>
-        </button>
-        <button
-          class="next-btn"
-          @click="playClick('teacher'); saveTask()"
-          :disabled="!isFormValid || isLoading"
-          :class="{ disabled: !isFormValid || isLoading }"
-        >
-          <span class="btn-text">{{ isLoading ? 'SAVING...' : (selectedCategory ? 'SAVE' : 'NEXT') }}</span>
-        </button>
-      </div>
+              <span class="btn-text">BACK</span>
+            </button>
+            <button
+              class="next-btn"
+              @click="
+                playClick('teacher');
+                saveTask();
+              "
+              :disabled="!isFormValid || isLoading"
+              :class="{ disabled: !isFormValid || isLoading }"
+            >
+              <span class="btn-text">{{
+                isLoading ? "SAVING..." : selectedCategory ? "SAVE" : "NEXT"
+              }}</span>
+            </button>
+          </div>
         </div>
       </Transition>
 
       <!-- Test Generation Modal -->
-    <TestGenerationModal
-      :is-open="showGenerationModal"
-      :test-type="selectedCategory"
-      :subcategory="selectedCategory"
-      :task-data="taskData"
-      @close="closeGenerationModal"
-      @generate="handleGenerateTest"
-      @manual="handleManualTest"
-    />
+      <TestGenerationModal
+        :is-open="showGenerationModal"
+        :test-type="selectedCategory"
+        :subcategory="selectedCategory"
+        :task-data="taskData"
+        @close="closeGenerationModal"
+        @generate="handleGenerateTest"
+        @manual="handleManualTest"
+      />
 
-    <!-- Manual Test Creation Modal -->
-    <ManualTestCreationModal
-      :is-open="showManualTestModal"
-      :test-type="selectedCategory"
-      :subcategory="selectedCategory"
-      :task-data="taskData"
-      @close="closeManualTestModal"
-      @save="handleManualTestSave"
-    />
+      <!-- Manual Test Creation Modal -->
+      <ManualTestCreationModal
+        :is-open="showManualTestModal"
+        :test-type="selectedCategory"
+        :subcategory="selectedCategory"
+        :task-data="taskData"
+        @close="closeManualTestModal"
+        @save="handleManualTestSave"
+      />
     </div>
   </Transition>
 </template>
 
 <script setup>
 import { IonIcon } from "@ionic/vue";
-import { 
-  documentTextOutline, 
-  bookOutline, 
-  volumeHighOutline, 
-  eyeOffOutline, 
-  libraryOutline 
+import {
+  documentTextOutline,
+  bookOutline,
+  volumeHighOutline,
+  eyeOffOutline,
+  libraryOutline,
 } from "ionicons/icons";
 import { ref, computed, watch, onBeforeUnmount } from "vue";
 import TestGenerationModal from "@/components/TestGenerationModal.vue";
@@ -165,21 +181,24 @@ const currentUser = ref(null);
 const classroomReadingInfo = ref({
   maxLevel: null,
   minLevel: null,
-  studentCount: 0
+  studentCount: 0,
 });
 
 const availableCategories = ref([]);
 
 // Watch for modal open/close for audio
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    console.log("🎵 Starting menu music for NewTaskModal...");
-    startMusic(MUSIC_TYPES.MENU, 0.3);
-  } else {
-    console.log("🔇 Stopping menu music for NewTaskModal...");
-    stopMusic();
+watch(
+  () => props.isOpen,
+  (newVal) => {
+    if (newVal) {
+      console.log("🎵 Starting menu music for NewTaskModal...");
+      startMusic(MUSIC_TYPES.MENU, 0.3);
+    } else {
+      console.log("🔇 Stopping menu music for NewTaskModal...");
+      stopMusic();
+    }
   }
-});
+);
 
 const taskData = ref({
   title: "",
@@ -205,39 +224,39 @@ const isFormValid = computed(() => {
 // Helper functions for reading levels
 const getReadingLevelName = (level) => {
   const levelMap = {
-    1: 'Non-Reader',
-    2: 'Frustration', 
-    3: 'Instructional',
-    4: 'Independent'
+    1: "Non-Reader",
+    2: "Frustration",
+    3: "Instructional",
+    4: "Independent",
   };
-  return levelMap[level] || 'Non-Reader';
+  return levelMap[level] || "Non-Reader";
 };
 
 const getTestRequirements = () => {
   return {
-    'cvc': { requiredLevel: 1, name: 'CVC Test' },
-    'phonics-merger': { requiredLevel: 2, name: 'Phonics Merger Test' },
-    'blending': { requiredLevel: 3, name: 'Blending Test' },
-    'silent-words': { requiredLevel: 4, name: 'Silent Words Test' },
-    'comprehensive': { requiredLevel: 4, name: 'Comprehensive Test' }
+    cvc: { requiredLevel: 1, name: "CVC Test" },
+    "phonics-merger": { requiredLevel: 2, name: "Phonics Merger Test" },
+    blending: { requiredLevel: 3, name: "Blending Test" },
+    "silent-words": { requiredLevel: 4, name: "Silent Words Test" },
+    comprehensive: { requiredLevel: 4, name: "Comprehensive Test" },
   };
 };
 
 const onCategoryChange = () => {
   resetTaskData();
-  
+
   // Set default task title based on category selection
   const categoryLabels = {
     "phonics-merger": "Phonics Merger Test",
-    "cvc": "CVC Test", 
-    "blending": "Blending Test",
+    cvc: "CVC Test",
+    blending: "Blending Test",
     "silent-words": "Silent Words Test",
-    "comprehensive": "Comprehensive Test"
+    comprehensive: "Comprehensive Test",
   };
-  
+
   if (selectedCategory.value) {
     taskData.value.title = categoryLabels[selectedCategory.value] || "Test";
-    
+
     // Show generation modal for non-comprehensive tests
     if (selectedCategory.value !== "comprehensive") {
       showGenerationModal.value = true;
@@ -258,15 +277,15 @@ const resetTaskData = () => {
 };
 
 const closeModal = () => {
-  playClick('teacher'); // 🎵 Play click sound
+  playClick("teacher"); // 🎵 Play click sound
   stopMusic(); // 🔇 Stop menu music
-  
+
   // Reset all form data
   selectedCategory.value = "";
   showGenerationModal.value = false;
   showManualTestModal.value = false;
   resetTaskData();
-  
+
   emit("close");
 };
 
@@ -279,14 +298,14 @@ const handleGenerateTest = (generationData) => {
   // Here you would typically call an API to generate the test
   // For now, we'll just proceed to show the task details form
   showGenerationModal.value = false;
-  
+
   // Add generation mode to task data
   taskData.value.generationMode = "auto_generated";
   taskData.value.testContent = {
     type: generationData.testType,
     subcategory: generationData.subcategory,
     generated: true,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
   taskData.value.instructions = `Auto-generated ${generationData.subcategory} test questions will be created.`;
 };
@@ -304,19 +323,20 @@ const closeManualTestModal = () => {
 
 const handleManualTestSave = (testData) => {
   console.log("Manual test saved:", testData);
-  
+
   // Update task data with the manual test content
   taskData.value.generationMode = "manual";
   taskData.value.testContent = testData.content || {};
   taskData.value.testSettings = testData.settings || {};
-  
+
   // Create descriptive instructions based on test content
   const contentKeys = Object.keys(testData.content || {});
   const itemCount = contentKeys.length;
-  const testTypeLabel = testData.testTypeLabel || getCategoryLabel(selectedCategory.value);
-  
+  const testTypeLabel =
+    testData.testTypeLabel || getCategoryLabel(selectedCategory.value);
+
   taskData.value.instructions = `Manual ${testTypeLabel}: ${itemCount} items configured`;
-  
+
   // Close the manual test modal - task details will now be visible
   showManualTestModal.value = false;
 };
@@ -324,45 +344,48 @@ const handleManualTestSave = (testData) => {
 // Fetch classroom students' reading levels
 const fetchClassroomReadingLevels = async () => {
   if (!props.classroomId) {
-    console.warn('No classroom ID provided');
+    console.warn("No classroom ID provided");
     setDefaultCategories();
     return;
   }
 
   try {
-    console.log('🔍 Fetching reading levels for classroom:', props.classroomId);
-    
-    const students = await TeacherService.getClassroomStudents(props.classroomId, getTeacherId());
-    
+    console.log("🔍 Fetching reading levels for classroom:", props.classroomId);
+
+    const students = await TeacherService.getClassroomStudents(
+      props.classroomId,
+      getTeacherId()
+    );
+
     if (students.success && students.data.length > 0) {
       // Get all reading levels
-      const readingLevels = students.data.map(student => 
-        student.current_reading_level || 1
+      const readingLevels = students.data.map(
+        (student) => student.current_reading_level || 1
       );
-      
+
       const maxLevel = Math.max(...readingLevels);
       const minLevel = Math.min(...readingLevels);
-      
+
       classroomReadingInfo.value = {
         maxLevel,
         minLevel,
-        studentCount: students.data.length
+        studentCount: students.data.length,
       };
-      
-      console.log('📊 Classroom reading levels:', {
+
+      console.log("📊 Classroom reading levels:", {
         maxLevel,
         minLevel,
         studentCount: students.data.length,
-        levels: readingLevels
+        levels: readingLevels,
       });
-      
+
       updateAvailableCategories(maxLevel);
     } else {
-      console.warn('No students found in classroom');
+      console.warn("No students found in classroom");
       setDefaultCategories();
     }
   } catch (error) {
-    console.error('Error fetching classroom reading levels:', error);
+    console.error("Error fetching classroom reading levels:", error);
     setDefaultCategories();
   }
 };
@@ -370,65 +393,63 @@ const fetchClassroomReadingLevels = async () => {
 // Update available categories based on highest reading level
 const updateAvailableCategories = (maxLevel) => {
   const categories = [];
-  
+
   // CVC Test is available even for non-readers (level 1)
-  categories.push(
-    { value: 'cvc', label: 'CVC Test', disabled: false }
-  );
-  
+  categories.push({ value: "cvc", label: "CVC Test", disabled: false });
+
   // Add categories based on highest reading level in classroom
   if (maxLevel >= 2) {
-    categories.push(
-      { value: 'phonics-merger', label: 'Phonics Merger Test', disabled: false }
-    );
+    categories.push({
+      value: "phonics-merger",
+      label: "Phonics Merger Test",
+      disabled: false,
+    });
   }
-  
+
   if (maxLevel >= 3) {
-    categories.push(
-      { value: 'blending', label: 'Blending Test', disabled: false }
-    );
+    categories.push({ value: "blending", label: "Blending Test", disabled: false });
   }
-  
+
   if (maxLevel >= 4) {
     categories.push(
-      { value: 'silent-words', label: 'Silent Words Test', disabled: false },
-      { value: 'comprehensive', label: 'Comprehensive Test', disabled: false }
+      { value: "silent-words", label: "Silent Words Test", disabled: false },
+      { value: "comprehensive", label: "Comprehensive Test", disabled: false }
     );
   }
-  
+
   // Add disabled options to show what's not available
   if (maxLevel < 2) {
     categories.push(
-      { value: 'phonics-merger', label: 'Phonics Merger Test', disabled: true },
-      { value: 'blending', label: 'Blending Test', disabled: true },
-      { value: 'silent-words', label: 'Silent Words Test', disabled: true },
-      { value: 'comprehensive', label: 'Comprehensive Test', disabled: true }
+      { value: "phonics-merger", label: "Phonics Merger Test", disabled: true },
+      { value: "blending", label: "Blending Test", disabled: true },
+      { value: "silent-words", label: "Silent Words Test", disabled: true },
+      { value: "comprehensive", label: "Comprehensive Test", disabled: true }
     );
   } else if (maxLevel < 3) {
     categories.push(
-      { value: 'blending', label: 'Blending Test', disabled: true },
-      { value: 'silent-words', label: 'Silent Words Test', disabled: true },
-      { value: 'comprehensive', label: 'Comprehensive Test', disabled: true }
+      { value: "blending", label: "Blending Test", disabled: true },
+      { value: "silent-words", label: "Silent Words Test", disabled: true },
+      { value: "comprehensive", label: "Comprehensive Test", disabled: true }
     );
   } else if (maxLevel < 4) {
     categories.push(
-      { value: 'silent-words', label: 'Silent Words Test', disabled: true },
-      { value: 'comprehensive', label: 'Comprehensive Test', disabled: true }
+      { value: "silent-words", label: "Silent Words Test", disabled: true },
+      { value: "comprehensive", label: "Comprehensive Test", disabled: true }
     );
   }
-  
+
   availableCategories.value = categories;
-  console.log('📋 Available categories updated:', categories);
+  console.log("📋 Available categories updated:", categories);
 };
 
 // Set default categories when no reading level data is available
 const setDefaultCategories = () => {
   availableCategories.value = [
-    { value: 'cvc', label: 'CVC Test', disabled: false },
-    { value: 'phonics-merger', label: 'Phonics Merger Test', disabled: false },
-    { value: 'blending', label: 'Blending Test', disabled: false },
-    { value: 'silent-words', label: 'Silent Words Test', disabled: false },
-    { value: 'comprehensive', label: 'Comprehensive Test', disabled: false }
+    { value: "cvc", label: "CVC Test", disabled: false },
+    { value: "phonics-merger", label: "Phonics Merger Test", disabled: false },
+    { value: "blending", label: "Blending Test", disabled: false },
+    { value: "silent-words", label: "Silent Words Test", disabled: false },
+    { value: "comprehensive", label: "Comprehensive Test", disabled: false },
   ];
 };
 
@@ -438,8 +459,8 @@ const getTeacherId = () => {
 };
 
 const saveTask = async () => {
-  playClick('teacher');
-  
+  playClick("teacher");
+
   if (!isFormValid.value) {
     return;
   }
@@ -449,26 +470,28 @@ const saveTask = async () => {
   try {
     // Validate required props
     if (!props.classroomId) {
-      throw new Error('Classroom ID is required to create a task');
+      throw new Error("Classroom ID is required to create a task");
     }
-    
-    console.log('🔍 NewTaskModal: Checking teacher ID...', { 
+
+    console.log("🔍 NewTaskModal: Checking teacher ID...", {
       propsTeacherId: props.teacherId,
-      currentUserValue: currentUser.value?.id 
+      currentUserValue: currentUser.value?.id,
     });
-    
+
     let teacherId = props.teacherId;
     if (!teacherId) {
-      console.log('⚠️ NewTaskModal: No teacherId prop, attempting to get from session...');
+      console.log(
+        "⚠️ NewTaskModal: No teacherId prop, attempting to get from session..."
+      );
       const session = await AuthService.getCurrentSession();
       if (!session?.user) {
-        console.error('❌ NewTaskModal: No authenticated user found in session');
-        throw new Error('No authenticated user found. Please log in again.');
+        console.error("❌ NewTaskModal: No authenticated user found in session");
+        throw new Error("No authenticated user found. Please log in again.");
       }
       teacherId = session.user.id;
-      console.log('✅ NewTaskModal: Got teacher ID from session:', teacherId);
+      console.log("✅ NewTaskModal: Got teacher ID from session:", teacherId);
     } else {
-      console.log('✅ NewTaskModal: Using teacher ID from props:', teacherId);
+      console.log("✅ NewTaskModal: Using teacher ID from props:", teacherId);
     }
 
     // Prepare task data according to database schema
@@ -478,53 +501,58 @@ const saveTask = async () => {
       category: selectedCategory.value,
       subcategory: selectedCategory.value, // Using same value for now
       priority: taskData.value.priority,
-      dueDate: taskData.value.dueDate ? new Date(taskData.value.dueDate).toISOString() : null,
+      dueDate: taskData.value.dueDate
+        ? new Date(taskData.value.dueDate).toISOString()
+        : null,
       instructions: taskData.value.instructions.trim(),
       maxPoints: 100, // Default value
-      generationMode: taskData.value.generationMode || 'manual',
+      generationMode: taskData.value.generationMode || "manual",
       testContent: taskData.value.testContent,
       testSettings: taskData.value.testSettings,
       classroomId: props.classroomId,
       assignToAll: true, // Default to assign to all students in classroom
     };
 
-    console.log('Creating task with data:', newTaskData);
-    console.log('📦 TeacherService object:', TeacherService);
-    console.log('📦 TeacherService.createTask function:', TeacherService.createTask);
-    console.log('🚀 About to call TeacherService.createTask...');
+    console.log("Creating task with data:", newTaskData);
+    console.log("📦 TeacherService object:", TeacherService);
+    console.log("📦 TeacherService.createTask function:", TeacherService.createTask);
+    console.log("🚀 About to call TeacherService.createTask...");
 
     // Call TeacherService to create task
     const result = await TeacherService.createTask(teacherId, newTaskData);
-    
-    console.log('🎯 Returned from TeacherService.createTask');
-    
-    console.log('📊 TeacherService.createTask result:', result);
-    console.log('📊 Result success:', result.success);
-    console.log('📊 Result error:', result.error);
-    console.log('📊 Result data:', result.data);
+
+    console.log("🎯 Returned from TeacherService.createTask");
+
+    console.log("📊 TeacherService.createTask result:", result);
+    console.log("📊 Result success:", result.success);
+    console.log("📊 Result error:", result.error);
+    console.log("📊 Result data:", result.data);
 
     if (result.success) {
-      console.log('✅ Task created successfully:', result.data);
-      
+      console.log("✅ Task created successfully:", result.data);
+
       // Emit save event with created task data
-      emit('save', result.data);
-      
+      emit("save", result.data);
+
       // Show success toast
       if (window.$toast) {
-        window.$toast.success('Task Created!', `${taskData.value.title} has been successfully created.`);
+        window.$toast.success(
+          "Task Created!",
+          `${taskData.value.title} has been successfully created.`
+        );
       }
-      
+
       // Close modal after successful save
       closeModal();
     } else {
-      console.error('❌ Task creation failed with error:', result.error);
-      throw new Error(result.error || 'Failed to create task');
+      console.error("❌ Task creation failed with error:", result.error);
+      throw new Error(result.error || "Failed to create task");
     }
   } catch (error) {
-    console.error('Error saving task:', error);
+    console.error("Error saving task:", error);
     // Show error toast
     if (window.$toast) {
-      window.$toast.error('Task Creation Failed', error.message || 'Please try again.');
+      window.$toast.error("Task Creation Failed", error.message || "Please try again.");
     }
   } finally {
     isLoading.value = false;
@@ -534,15 +562,13 @@ const saveTask = async () => {
 const getCategoryLabel = (categoryValue) => {
   const labels = {
     "phonics-merger": "Phonics Merger Test",
-    "cvc": "CVC Test",
-    "blending": "Blending Test",
+    cvc: "CVC Test",
+    blending: "Blending Test",
     "silent-words": "Silent Words Test",
-    "comprehensive": "Comprehensive Test",
+    comprehensive: "Comprehensive Test",
   };
   return labels[categoryValue] || categoryValue;
 };
-
-
 
 // Method to initialize user data
 const initializeUserData = async () => {
@@ -554,7 +580,7 @@ const initializeUserData = async () => {
       }
     }
   } catch (error) {
-    console.error('Error getting current user:', error);
+    console.error("Error getting current user:", error);
   }
 };
 
@@ -563,21 +589,21 @@ watch(
   () => props.isOpen,
   async (newValue) => {
     if (newValue) {
-      console.log('🎯 NewTaskModal: Modal opened with props:', {
+      console.log("🎯 NewTaskModal: Modal opened with props:", {
         classroomId: props.classroomId,
         teacherId: props.teacherId,
-        isOpen: props.isOpen
+        isOpen: props.isOpen,
       });
-      
+
       // Reset form when modal opens
       selectedCategory.value = "";
       showGenerationModal.value = false;
       showManualTestModal.value = false;
       resetTaskData();
-      
+
       // Fetch classroom reading levels to determine available test types
       await fetchClassroomReadingLevels();
-      
+
       // Initialize user data
       await initializeUserData();
     }
