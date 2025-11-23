@@ -17,6 +17,7 @@ export class AuthService {
   static async signUp(email, password, userData) {
     try {
       console.log('📝 SignUp method called with userData:', userData);
+      console.log('📝 Full Name Value:', userData.fullName || userData.full_name);
       
       // Create auth user first
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -24,23 +25,35 @@ export class AuthService {
         password: password,
         options: {
           data: {
-            full_name: userData.fullName,
-            user_type: userData.userType
+            full_name: userData.fullName || userData.full_name,
+            user_type: userData.userType || userData.user_type
           }
         }
       })
 
       if (authError) throw authError
 
+      console.log('✅ Auth user created with ID:', authData.user?.id);
+
       // Create profile in our profiles table
-      if (authData.user && authData.session) {
-        // Set the session first to ensure RLS policies work
-        supabase.auth.setSession(authData.session)
+      if (authData.user) {
+        // Set the session if available (might not be available if email confirmation is required)
+        if (authData.session) {
+          supabase.auth.setSession(authData.session)
+          console.log('✅ Session set');
+        } else {
+          console.warn('⚠️ No session returned from signup (email confirmation may be required)');
+        }
         
         const fullNameValue = userData.fullName || userData.full_name || '';
         const userTypeValue = userData.userType || userData.user_type || 'student';
         
-        console.log('📝 Creating profile with fullName:', fullNameValue, 'userType:', userTypeValue);
+        console.log('📝 Preparing profile insert with:', {
+          id: authData.user.id,
+          email: email,
+          full_name: fullNameValue,
+          user_type: userTypeValue
+        });
         
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
@@ -53,8 +66,8 @@ export class AuthService {
             bio: userData.bio || null,
             phone_number: userData.phone_number || userData.phoneNumber || null,
             date_of_birth: userData.date_of_birth || userData.dateOfBirth || null,
-            grade_level: userData.grade_level || userData.gradeLevel || null, // For students
-            teacher_id: userData.teacher_id || userData.teacherId || null, // For students assigned to teachers
+            grade_level: userData.grade_level || userData.gradeLevel || null,
+            teacher_id: userData.teacher_id || userData.teacherId || null,
             is_active: true,
             notifications_enabled: true,
             sound_enabled: true,
@@ -64,11 +77,19 @@ export class AuthService {
           .single()
 
         if (profileError) {
-          console.error('Profile creation error:', profileError)
-          // If profile creation fails, still return success for auth but note the error
-          console.warn('Profile creation failed but authentication succeeded. User may need to complete profile setup.')
+          console.error('❌ Profile creation error:', profileError);
+          console.error('Error details:', {
+            message: profileError.message,
+            code: profileError.code,
+            details: profileError.details
+          });
         } else {
-          console.log('✅ Profile created successfully with full_name:', profile?.full_name);
+          console.log('✅ Profile created successfully:', {
+            id: profile?.id,
+            full_name: profile?.full_name,
+            email: profile?.email,
+            user_type: profile?.user_type
+          });
         }
 
         // Initialize user stats for students
@@ -83,6 +104,8 @@ export class AuthService {
           
           if (statsError) {
             console.error('User stats creation error:', statsError)
+          } else {
+            console.log('✅ User stats created');
           }
         }
 
