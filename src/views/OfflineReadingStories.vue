@@ -465,7 +465,7 @@ watch(currentWordIndex, () => autoScrollToCurrent());
 const initNativeSpeechRecognition = async () => {
   try {
     console.log("🎤 Initializing native speech recognition for mobile");
-    
+
     // Check if speech recognition is available
     const available = await SpeechRecognition.available();
     if (!available) {
@@ -473,7 +473,7 @@ const initNativeSpeechRecognition = async () => {
       alert("Speech recognition is not available on this device.");
       return;
     }
-    
+
     // Request permissions
     const { granted } = await SpeechRecognition.requestPermissions();
     if (!granted) {
@@ -481,7 +481,7 @@ const initNativeSpeechRecognition = async () => {
       alert("Microphone permission is required for reading practice.");
       return;
     }
-    
+
     console.log("✅ Native speech recognition ready");
     speechSystemReady.value = true;
   } catch (error) {
@@ -810,7 +810,7 @@ const startReading = async () => {
   } else {
     console.log("🎯 Starting offline reading with Vosk");
   }
-  
+
   nextTick(() => autoScrollToCurrent());
   startWordTimer();
 };
@@ -818,11 +818,11 @@ const startReading = async () => {
 const stopReading = async () => {
   listening.value = false;
   clearTimeout(wordTimer.value);
-  
+
   if (isNativePlatform) {
     await stopNativeSpeechRecognition();
   }
-  
+
   console.log("🛑 Reading stopped");
   calculateProficiency();
 
@@ -1044,23 +1044,25 @@ const goBackToSelection = () => {
 const startNativeSpeechRecognition = async () => {
   try {
     console.log("🎤 Starting native speech recognition...");
-    
+
     // Check permissions before starting
     const permissionStatus = await SpeechRecognition.checkPermissions();
     console.log("🎤 Permission status:", permissionStatus);
 
-    if (permissionStatus.speechRecognition !== 'granted') {
+    if (permissionStatus.speechRecognition !== "granted") {
       console.log("🎤 Requesting speech recognition permissions...");
       const result = await SpeechRecognition.requestPermissions();
       console.log("🎤 Permission request result:", result);
-      
+
       if (!result.granted) {
         console.error("❌ Speech recognition permissions denied");
-        alert("Microphone permission is required for speech recognition. Please enable it in your device settings.");
+        alert(
+          "Microphone permission is required for speech recognition. Please enable it in your device settings."
+        );
         return;
       }
     }
-    
+
     await SpeechRecognition.start({
       language: "en-US",
       maxResults: 1,
@@ -1068,7 +1070,7 @@ const startNativeSpeechRecognition = async () => {
       partialResults: true,
       popup: false,
     });
-    
+
     // Listen for results
     SpeechRecognition.addListener("partialResults", (data) => {
       if (data.matches && data.matches.length > 0) {
@@ -1077,7 +1079,7 @@ const startNativeSpeechRecognition = async () => {
         checkWord(spokenText, false);
       }
     });
-    
+
     SpeechRecognition.addListener("finalResults", (data) => {
       if (data.matches && data.matches.length > 0) {
         const spokenText = data.matches[0];
@@ -1085,7 +1087,6 @@ const startNativeSpeechRecognition = async () => {
         checkWord(spokenText, true);
       }
     });
-    
   } catch (error) {
     console.error("❌ Error starting native speech recognition:", error);
     alert("Failed to start speech recognition: " + error.message);
@@ -1108,7 +1109,7 @@ onBeforeUnmount(async () => {
   if (isNativePlatform) {
     await stopNativeSpeechRecognition();
   }
-  
+
   // Cleanup Vosk offline recognition
   if (scriptProcessor) {
     scriptProcessor.disconnect();
