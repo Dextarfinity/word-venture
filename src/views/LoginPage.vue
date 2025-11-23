@@ -41,13 +41,16 @@
           </div>
 
           <!-- Password Input -->
-          <div class="input-wrapper">
+          <div class="input-wrapper password-wrapper">
             <ion-input
               v-model="password"
-              type="password"
+              :type="showPassword ? 'text' : 'password'"
               placeholder="••••••••••••"
               class="custom-input"
             ></ion-input>
+            <button @click="showPassword = !showPassword" class="password-toggle" type="button">
+              <ion-icon :icon="showPassword ? eyeOffOutline : eyeOutline" class="eye-icon"></ion-icon>
+            </button>
           </div>
 
           <!-- Error Message -->
@@ -83,7 +86,7 @@
 
 <script setup>
 import { IonPage, IonContent, IonInput, IonButton, IonIcon } from "@ionic/vue";
-import { arrowBackOutline } from "ionicons/icons";
+import { arrowBackOutline, eyeOutline, eyeOffOutline } from "ionicons/icons";
 import { ref, onMounted, watch, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
 import { useAuth } from "@/composables/services";
@@ -100,6 +103,7 @@ const { login, isLoading, error, isAuthenticated, profile, initialize } = useAut
 const email = ref("");
 const password = ref("");
 const errorMessage = ref("");
+const showPassword = ref(false);
 
 // Login handler with backend integration
 const handleLogin = async () => {
@@ -255,6 +259,35 @@ onBeforeUnmount(() => {
 
 .input-wrapper {
   margin-bottom: 16px;
+}
+
+.password-wrapper {
+  position: relative;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.eye-icon {
+  color: #999;
+  font-size: 20px;
+  transition: color 0.2s ease;
+}
+
+.password-toggle:hover .eye-icon {
+  color: #666;
 }
 
 .custom-input {
