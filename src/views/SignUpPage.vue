@@ -109,7 +109,7 @@
 </template>
 
 <script setup>
-import { IonPage, IonContent, IonInput, IonButton, IonIcon } from "@ionic/vue";
+import { IonPage, IonContent, IonInput, IonButton, IonIcon, toastController } from "@ionic/vue";
 import { arrowBackOutline, eyeOutline, eyeOffOutline } from "ionicons/icons";
 import { ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRouter } from "vue-router";
@@ -131,6 +131,23 @@ const errorMessage = ref("");
 const isLoading = ref(false);
 const showPassword = ref(false);
 const showConfirmPassword = ref(false);
+
+const showSuccessToast = async () => {
+  const toast = await toastController.create({
+    message: 'Sign up succeeded, please confirm your email...',
+    duration: 7000,
+    position: 'top',
+    color: 'success',
+    buttons: [
+      {
+        text: 'Close',
+        role: 'cancel',
+      }
+    ]
+  });
+
+  await toast.present();
+};
 
 // Sign up handler with backend integration
 const handleSignUp = async () => {
@@ -176,6 +193,9 @@ const handleSignUp = async () => {
       } else if (result.data.profileError) {
         console.warn('⚠️ Profile creation had issues:', result.data.profileError);
       }
+      
+      // Show success toast
+      await showSuccessToast();
       
       // Navigate to student home page
       router.push("/student/home");
