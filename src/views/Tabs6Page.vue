@@ -70,9 +70,8 @@ const usingOffline = ref(false);
 const isOnline = ref(navigator.onLine);
 const connectivityChecked = ref(false);
 const speechSystemReady = ref(false);
+const activeRecognitionSystem = ref(null); // Track which system is active: 'webspeech' or 'vosk'
 let voskRecognizer = null;
-
-// ✅ Check internet connectivity for 5 seconds
 const checkConnectivity = async () => {
   console.log("🌐 Checking internet connectivity...");
 
@@ -783,6 +782,7 @@ const initSpeech = async () => {
       };
 
       speechSystemReady.value = true;
+      activeRecognitionSystem.value = 'webspeech';
       console.log("✅ Web Speech API initialized successfully");
     } else {
       // 🔹 No internet or Web Speech API not available, use Vosk
@@ -1019,6 +1019,7 @@ const initVoskFallback = async () => {
 
     console.log("✅ Vosk offline recognition ready");
     speechSystemReady.value = true;
+    activeRecognitionSystem.value = 'vosk';
 
     // Set up simple event listeners (like Web Speech API)
     // Set up modern vosk-browser event listeners with detailed debugging

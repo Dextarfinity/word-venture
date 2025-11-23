@@ -558,6 +558,8 @@ const sessionData = ref({
   readingSpeed: 0,
 });
 
+const activeRecognitionSystem = ref(null); // Track which system is active: 'native', 'vosk', or 'webspeech'
+
 let recognition = null; // ✅ WebSpeech instance
 
 // ✅ Connection cache to avoid repetitive checks
@@ -1150,6 +1152,7 @@ const initWebSpeechFallback = async () => {
   }
 
   console.log("✅ Web Speech API fallback initialized");
+  activeRecognitionSystem.value = 'webspeech';
 };
 
 // 🎤 Setup unified speech recognition event listeners

@@ -4,12 +4,16 @@ import { IonPage, IonContent, IonIcon } from "@ionic/vue";
 import { arrowBackOutline } from "ionicons/icons";
 import { useRouter } from "vue-router";
 import { loadCSV } from "../parseCSV.js";
+import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
 import QuizPrompt from "../components/QuizPrompt.vue";
 import QuizModal from "../components/QuizModal.vue";
 import QuizResultsModal from "../components/QuizResultsModal.vue";
 
 // Router instance
 const router = useRouter();
+
+// Audio system
+const { startMusic, stopMusic, playClick, playWordFeedback } = useAudio();
 
 const stories = ref([]);
 const words = ref([]);
@@ -38,6 +42,7 @@ const usingOffline = ref(false);
 const isOnline = ref(navigator.onLine);
 const connectivityChecked = ref(false);
 const speechSystemReady = ref(false);
+const activeRecognitionSystem = ref(null); // Track which system is active: 'webspeech' or 'vosk'
 let voskRecognizer = null;
 
 // ✅ Check internet connectivity for 5 seconds
@@ -120,6 +125,9 @@ const checkConnectivity = async () => {
 
 // ✅ Load CSVs once on mount
 onMounted(async () => {
+  console.log("🎵 Starting reading music for Tabs7Page...");
+  startMusic(MUSIC_TYPES.READING, 0.3);
+
   stories.value = await loadCSV("/csv_offline/stories_qna_clean_titles_3x.csv");
   console.log("📖 Stories:", stories.value);
 
@@ -306,6 +314,7 @@ const initSpeech = async () => {
       };
 
       speechSystemReady.value = true;
+      activeRecognitionSystem.value = 'webspeech';
       console.log("✅ Web Speech API initialized successfully");
     } else {
       // 🔹 No internet or Web Speech API not available, use Vosk
@@ -542,6 +551,7 @@ const initVoskFallback = async () => {
 
     console.log("✅ Vosk offline recognition ready");
     speechSystemReady.value = true;
+    activeRecognitionSystem.value = 'vosk';
 
     // Set up simple event listeners (like Web Speech API)
     // Set up modern vosk-browser event listeners with detailed debugging
@@ -934,6 +944,9 @@ const handleRetakeQuiz = () => {
 };
 
 onBeforeUnmount(() => {
+  console.log("🔇 Stopping reading music for Tabs7Page...");
+  stopMusic();
+
   if (recognition.value) recognition.value.stop();
 
   // Clean up result polling
