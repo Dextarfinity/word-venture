@@ -5,7 +5,7 @@
       <div class="landing-page">
         <!-- Background image -->
         <div class="background-image"></div>
-        
+
         <!-- Cloud decorations using CSS -->
         <div class="clouds">
           <div class="cloud cloud1"></div>
@@ -22,9 +22,9 @@
         <div class="content-container">
           <!-- Capybara Character -->
           <div class="capybara-container">
-            <img 
-              src="@/img/CapyBuddy Assets/Splash/capybara.png" 
-              alt="CapyBuddy Mascot" 
+            <img
+              src="@/img/CapyBuddy Assets/Splash/capybara.png"
+              alt="CapyBuddy Mascot"
               class="capybara-image"
             />
           </div>
@@ -38,7 +38,10 @@
           <!-- Action Buttons -->
           <div class="button-section">
             <ion-button
-              @click="playClick('student'); goToLogin()"
+              @click="
+                playClick('student');
+                goToLogin();
+              "
               expand="block"
               class="action-button login-button"
             >
@@ -46,7 +49,10 @@
             </ion-button>
 
             <ion-button
-              @click="playClick('student'); goToSignUp()"
+              @click="
+                playClick('student');
+                goToSignUp();
+              "
               expand="block"
               class="action-button signup-button"
             >
@@ -54,7 +60,10 @@
             </ion-button>
 
             <ion-button
-              @click="playClick('student'); continueAsGuest()"
+              @click="
+                playClick('student');
+                continueAsGuest();
+              "
               expand="block"
               class="action-button guest-button"
             >
@@ -68,9 +77,9 @@
 </template>
 
 <script setup>
-import { IonPage, IonContent, IonButton } from '@ionic/vue';
-import { useRouter } from 'vue-router';
-import { onMounted, onBeforeUnmount } from 'vue';
+import { IonPage, IonContent, IonButton } from "@ionic/vue";
+import { useRouter } from "vue-router";
+import { onMounted, onBeforeUnmount } from "vue";
 import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
 
 // Audio system
@@ -90,19 +99,19 @@ onBeforeUnmount(() => {
 });
 
 const goToLogin = () => {
-  playClick('student'); // 🎵 Play click sound
-  router.push('/login');
+  playClick("student"); // 🎵 Play click sound
+  router.push("/login");
 };
 
 const goToSignUp = () => {
-  playClick('student'); // 🎵 Play click sound
-  router.push('/signup');
+  playClick("student"); // 🎵 Play click sound
+  router.push("/signup");
 };
 
 const continueAsGuest = () => {
-  playClick('student'); // 🎵 Play click sound
+  playClick("student"); // 🎵 Play click sound
   // Navigate to offline reading selection for guest users
-  router.push('/offline-reading-selection');
+  router.push("/offline-reading-selection");
 };
 </script>
 
@@ -124,7 +133,7 @@ const continueAsGuest = () => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(180deg, #87CEEB 0%, #B0E0E6 100%);
+  background: linear-gradient(180deg, #87ceeb 0%, #b0e0e6 100%);
   z-index: 1;
 }
 
@@ -146,7 +155,7 @@ const continueAsGuest = () => {
 
 .cloud:before,
 .cloud:after {
-  content: '';
+  content: "";
   position: absolute;
   background: white;
   border-radius: 50px;
@@ -245,8 +254,12 @@ const continueAsGuest = () => {
 }
 
 @keyframes float {
-  0% { transform: translateX(-20px); }
-  100% { transform: translateX(20px); }
+  0% {
+    transform: translateX(-20px);
+  }
+  100% {
+    transform: translateX(20px);
+  }
 }
 
 .content-container {
@@ -280,17 +293,17 @@ const continueAsGuest = () => {
 .app-title {
   font-size: 32px;
   font-weight: bold;
-  color: #8B4513;
+  color: #8b4513;
   margin-bottom: 8px;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  font-family: 'Jua', cursive;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: "Jua", cursive;
 }
 
 .app-tagline {
   font-size: 16px;
-  color: #A0522D;
+  color: #a0522d;
   font-weight: 500;
-  font-family: 'Jua', cursive;
+  font-family: "Jua", cursive;
 }
 
 .button-section {
@@ -308,7 +321,7 @@ const continueAsGuest = () => {
   font-size: 16px;
   text-transform: none;
   height: 50px;
-  font-family: 'Jua', cursive;
+  font-family: "Jua", cursive;
 }
 
 .login-button {
