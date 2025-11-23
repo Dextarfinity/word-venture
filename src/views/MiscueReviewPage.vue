@@ -80,10 +80,10 @@
           </button>
 
           <!-- Previous attempt info -->
-          <div v-if="currentMiscueWord?.spoken_word" class="attempt-info">
-            <p class="attempt-label">You said "{{ currentMiscueWord.spoken_word }}"</p>
+          <div v-if="currentMiscueWord?.actual_reading" class="attempt-info">
+            <p class="attempt-label">Original: "{{ currentMiscueWord.actual_reading }}"</p>
             <p class="attempt-detail">
-              {{ getErrorTypeMessage(currentMiscueWord.error_type) }}
+              {{ getErrorTypeMessage(currentMiscueWord.miscue_type) }}
             </p>
           </div>
 
@@ -146,7 +146,7 @@
               <div class="comparison-row">
                 <span class="label">You said:</span>
                 <span class="spoken-word" :class="{ incorrect: !lastAttemptCorrect }">
-                  "{{ lastSpokenWord }}"
+                  {{ lastSpokenWord || "..." }}
                 </span>
               </div>
               <div class="comparison-row">
