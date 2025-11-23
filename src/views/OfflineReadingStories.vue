@@ -548,9 +548,8 @@ const initVoskOfflineRecognition = async () => {
 
     // Try different model paths
     const modelPaths = [
-      "/models/vosk-model-small-en-us-0.15.zip",
-      "/models/vosk-model-small-en-us-0.15.tar.gz",
-      "/models/vosk-model-tl-ph-generic-0.6.zip",
+      "/models/vosk-model-small-en-us-0.15",
+      "/models/vosk-model-tl-ph-generic-0.6",
     ];
 
     let modelLoaded = false;

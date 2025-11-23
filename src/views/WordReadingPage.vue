@@ -817,9 +817,8 @@ const initVoskFallback = async () => {
 
   // Try different model paths - prioritizing English for Vosk offline
   const modelPaths = [
-    "/models/vosk-model-small-en-us-0.15.zip", // English primary (ZIP format for Vosk)
-    "/models/vosk-model-small-en-us-0.15.tar.gz", // English backup (TAR.GZ)
-    "/models/vosk-model-tl-ph-generic-0.6.zip", // Filipino fallback if needed
+    "/models/vosk-model-small-en-us-0.15", // English primary (extracted folder)
+    "/models/vosk-model-tl-ph-generic-0.6", // Filipino fallback if needed
   ];
 
   let modelLoaded = false;
