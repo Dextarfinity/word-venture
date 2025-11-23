@@ -538,8 +538,17 @@ const initWebSpeechAPI = async () => {
 const initVoskOfflineRecognition = async () => {
   // Check if user wants to skip Vosk (for debugging)
   const skipVosk = new URLSearchParams(window.location.search).get('skipVosk') === 'true';
-  if (skipVosk) {
-    console.log("⏭️ Skipping Vosk (skipVosk=true), using Web Speech API directly");
+  
+  // On Vercel, always use Web Speech API due to double-compression issue with tar.gz
+  const isVercel = window.location.hostname === 'word-venture.vercel.app' || 
+                   window.location.hostname.includes('vercel.app');
+  
+  if (skipVosk || isVercel) {
+    if (isVercel) {
+      console.log("🌐 Vercel deployment detected - using Web Speech API for reliability");
+    } else {
+      console.log("⏭️ Skipping Vosk (skipVosk=true), using Web Speech API directly");
+    }
     await initWebSpeechAPI();
     return;
   }

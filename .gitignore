@@ -38,6 +38,5 @@ npm-debug.log*
 /www
 /android
 
-# Large model files
-/public/models/*.zip
-/public/models/*.tar.gz
+# Model files - only include English model (41 MB), exclude Filipino (313 MB) due to GitHub limit
+/public/models/vosk-model-tl-ph-generic-0.6.zip
