@@ -16,6 +16,8 @@ export class AuthService {
    */
   static async signUp(email, password, userData) {
     try {
+      console.log('📝 SignUp method called with userData:', userData);
+      
       // Create auth user first
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: email,
@@ -35,13 +37,18 @@ export class AuthService {
         // Set the session first to ensure RLS policies work
         supabase.auth.setSession(authData.session)
         
+        const fullNameValue = userData.fullName || userData.full_name || '';
+        const userTypeValue = userData.userType || userData.user_type || 'student';
+        
+        console.log('📝 Creating profile with fullName:', fullNameValue, 'userType:', userTypeValue);
+        
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .insert({
             id: authData.user.id,
             email: email,
-            full_name: userData.full_name || userData.fullName || '',
-            user_type: userData.user_type || userData.userType || 'student',
+            full_name: fullNameValue,
+            user_type: userTypeValue,
             avatar_url: userData.avatar_url || userData.avatarUrl || null,
             bio: userData.bio || null,
             phone_number: userData.phone_number || userData.phoneNumber || null,
@@ -60,10 +67,12 @@ export class AuthService {
           console.error('Profile creation error:', profileError)
           // If profile creation fails, still return success for auth but note the error
           console.warn('Profile creation failed but authentication succeeded. User may need to complete profile setup.')
+        } else {
+          console.log('✅ Profile created successfully with full_name:', profile?.full_name);
         }
 
         // Initialize user stats for students
-        if ((userData.user_type === 'student' || userData.userType === 'student') && !profileError) {
+        if ((userTypeValue === 'student') && !profileError) {
           const { error: statsError } = await supabase
             .from('user_stats')
             .insert({

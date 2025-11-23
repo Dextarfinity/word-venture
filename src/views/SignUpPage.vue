@@ -161,8 +161,8 @@ const handleSignUp = async () => {
     });
 
     const result = await AuthService.signUp(email.value, password.value, {
-      full_name: fullName.value,
-      user_type: 'student' // Default to student
+      fullName: fullName.value,
+      userType: 'student' // Default to student
     });
 
     console.log('📝 Signup result:', result);
