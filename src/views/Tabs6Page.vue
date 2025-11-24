@@ -201,7 +201,7 @@ onMounted(async () => {
       if (taskAssignment.category === "comprehensive") {
         if (taskAssignment.testContent) {
           story.value = JSON.parse(taskAssignment.testContent);
-          console.log("📖 Using test content from assignment");
+          console.log("📖 Using test content from assignment:", story.value);
         } else {
           // Fallback to random story for comprehensive test
           console.log(
@@ -214,7 +214,8 @@ onMounted(async () => {
         await fetchStory();
       }
 
-      initializeStoryWords();
+      console.log("📖 Story object before initialization:", story.value);
+      await initializeStoryWords();
       // Clear the stored assignment so it doesn't persist on page refresh
       sessionStorage.removeItem("taskAssignment");
     } catch (error) {
@@ -349,10 +350,12 @@ const fetchQuestions = (storyTitle) => {
 const analyzeStoryWordsAsync = async () => {
   try {
     if (!story.value) {
-      console.warn("No story available for analysis");
+      console.warn("❌ No story available for analysis");
       return;
     }
 
+    console.log("🔍 Story object keys:", Object.keys(story.value));
+    
     const storyText =
       story.value["Story Text"] ||
       story.value["StoryText"] ||
@@ -361,11 +364,12 @@ const analyzeStoryWordsAsync = async () => {
       "";
 
     if (!storyText) {
-      console.warn("Story text is empty, skipping analysis");
+      console.warn("❌ Story text is empty, skipping analysis. Story object:", story.value);
       return;
     }
 
     console.log("🔍 Starting word analysis for story...");
+    console.log("📝 Story text length:", storyText.length, "characters");
 
     // Use rule-based fallback analysis (reliable and fast)
     wordAnalysis.value = await analyzeStoryWords(storyText, false);
@@ -384,6 +388,7 @@ const analyzeStoryWordsAsync = async () => {
       console.log("📊 Sight Words:", wordAnalysis.value.counts["Sight Words"] || 0);
       console.log("📊 Other words:", wordAnalysis.value.counts["Other"] || 0);
       console.log("📊 Total words analyzed:", wordAnalysis.value.total_words || 0);
+      console.log("📚 Categorized words structure:", JSON.stringify(wordAnalysis.value.categorized_words, null, 2));
     }
   } catch (error) {
     console.error("❌ Error analyzing story words:", error);
@@ -394,6 +399,7 @@ const analyzeStoryWordsAsync = async () => {
 // 📚 Get the phonics category for a given word
 const getWordCategory = (word) => {
   if (!wordAnalysis.value || !wordAnalysis.value.categorized_words) {
+    console.log(`⚠️ No word analysis available for word: "${word}"`);
     return "Other"; // Default if analysis not available
   }
 
@@ -404,10 +410,12 @@ const getWordCategory = (word) => {
     wordAnalysis.value.categorized_words
   )) {
     if (Array.isArray(wordsList) && wordsList.includes(cleanWord)) {
+      console.log(`✅ Word "${cleanWord}" found in category: ${category}`);
       return category;
     }
   }
 
+  console.log(`❌ Word "${cleanWord}" not found in any category, defaulting to Other`);
   return "Other"; // Default if word not found in any category
 };
 
