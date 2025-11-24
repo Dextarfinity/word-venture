@@ -559,27 +559,27 @@ function analyzeFallback(words) {
     
     // Check sight words first
     if (sightWords.has(lower)) {
-      categories['Sight Words'].push(word);
+      categories['Sight Words'].push(lower); // Store lowercase for consistent lookup
     }
     // Check silent letters
     else if (silentLetterPatterns.some(pattern => pattern.test(lower))) {
-      categories['Silent Letter'].push(word);
+      categories['Silent Letter'].push(lower); // Store lowercase for consistent lookup
     }
     // Check phonics mergers (digraphs)
     else if (phonicsMergerPatterns.some(pattern => pattern.test(lower))) {
-      categories['Phonics Merger'].push(word);
+      categories['Phonics Merger'].push(lower); // Store lowercase for consistent lookup
     }
     // Check blending
     else if (blendPatterns.some(pattern => pattern.test(lower))) {
-      categories['Blending'].push(word);
+      categories['Blending'].push(lower); // Store lowercase for consistent lookup
     }
     // Check CVC pattern (3 letters, consonant-vowel-consonant)
     else if (/^[bcdfghjklmnpqrstvwxyz][aeiou][bcdfghjklmnpqrstvwxyz]$/i.test(lower)) {
-      categories['CVC'].push(word);
+      categories['CVC'].push(lower); // Store lowercase for consistent lookup
     }
     // Everything else
     else {
-      categories['Other'].push(word);
+      categories['Other'].push(lower); // Store lowercase for consistent lookup
     }
   });
 
