@@ -58,8 +58,28 @@
             </div>
 
             <div class="form-field">
-              <label class="field-label">DUE DATE</label>
-              <input type="date" class="form-input" v-model="taskData.dueDate" />
+              <label class="field-label">DUE DATE & TIME</label>
+              <div class="datetime-container">
+                <div class="datetime-field">
+                  <label class="datetime-sublabel">Date</label>
+                  <input 
+                    type="date" 
+                    class="form-input datetime-input"
+                    v-model="taskData.dueDate" 
+                  />
+                </div>
+                <div class="datetime-field">
+                  <label class="datetime-sublabel">Time</label>
+                  <input 
+                    type="time" 
+                    class="form-input datetime-input"
+                    v-model="taskData.dueTime"
+                  />
+                </div>
+              </div>
+              <div v-if="dueDateTimeDisplay" class="datetime-display">
+                <span class="datetime-value">{{ dueDateTimeDisplay }}</span>
+              </div>
             </div>
 
             <div class="form-field">
@@ -203,6 +223,7 @@ watch(
 const taskData = ref({
   title: "",
   dueDate: "",
+  dueTime: "09:00", // Default to 9 AM
   priority: "medium",
   instructions: "",
   generationMode: "manual",
@@ -218,6 +239,26 @@ const isFormValid = computed(() => {
     taskData.value.dueDate !== "" &&
     taskData.value.instructions.trim() !== ""
   );
+});
+
+const dueDateTimeDisplay = computed(() => {
+  if (!taskData.value.dueDate) return "";
+  
+  const date = new Date(taskData.value.dueDate);
+  const [hours, minutes] = (taskData.value.dueTime || "09:00").split(":");
+  date.setHours(parseInt(hours), parseInt(minutes));
+  
+  const options = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true
+  };
+  
+  return date.toLocaleDateString("en-US", options);
 });
 
 // Methods
@@ -268,6 +309,7 @@ const resetTaskData = () => {
   taskData.value = {
     title: "",
     dueDate: "",
+    dueTime: "09:00", // Default to 9 AM
     priority: "medium",
     instructions: "",
     generationMode: "manual",
@@ -898,6 +940,47 @@ onBeforeUnmount(() => {
 
 .btn-text {
   display: block;
+}
+
+/* DateTime Styles */
+.datetime-container {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.datetime-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.datetime-sublabel {
+  font-size: 9px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.datetime-input {
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.datetime-display {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #e8f5e9;
+  border-radius: 6px;
+  border-left: 3px solid #4caf50;
+}
+
+.datetime-value {
+  font-size: 12px;
+  color: #2e7d32;
+  font-weight: 500;
 }
 
 /* Responsive Design */

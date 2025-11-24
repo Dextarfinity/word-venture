@@ -1935,6 +1935,141 @@ class TeacherService {
     }
   }
 
+  /**
+   * Get words by category for test creation
+   * Maps frontend category names to database category values from Words table
+   * @param {string} category - The category (cvc, blending, silent-words, phonics-merger)
+   * @param {number} limit - Maximum number of words to fetch (default 50)
+   */
+  static async getWordsByCategory(category, limit = 50) {
+    try {
+      console.log('📚 Fetching words for category:', { category, limit });
+
+      // Map frontend category names to database category values (from CSV and Words table)
+      const categoryMap = {
+        'cvc': 'CVC',
+        'blending': 'Blending',
+        'silent-words': 'Silent Letter',
+        'silent-letter': 'Silent Letter',
+        'phonics-merger': 'Phonics Merger',
+        'phonics_merger': 'Phonics Merger'
+      };
+
+      // Get the correct category value from the database
+      const dbCategory = categoryMap[category.toLowerCase()] || category;
+      console.log(`🔍 Querying Words table for category: "${dbCategory}"`);
+
+      // Query the Words table filtered by category
+      const { data: words, error } = await supabase
+        .from('Words')
+        .select('word, category, difficulty_level, pronunciation, definition, example_sentence')
+        .eq('category', dbCategory)
+        .eq('is_active', true)
+        .order('difficulty_level', { ascending: true })
+        .limit(limit);
+
+      if (error) {
+        console.error('❌ Error fetching words:', error);
+        throw error;
+      }
+
+      console.log(`✅ Fetched ${words?.length || 0} ${dbCategory} words`);
+      return { success: true, data: words || [] };
+    } catch (error) {
+      console.error('❌ Error in getWordsByCategory:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get randomized words from a specific category
+   * @param {string} category - Test category (e.g., 'cvc', 'blending')
+   * @param {number} count - Number of words to return (randomized)
+   * @returns {Object} {success: boolean, data: Word[]}
+   */
+  static async getRandomizedWordsByCategory(category, count = 10) {
+    try {
+      console.log('🎲 Fetching randomized words for category:', { category, count });
+
+      // Map frontend category names to database category values
+      const categoryMap = {
+        'cvc': 'CVC',
+        'blending': 'Blending',
+        'silent-words': 'Silent Letter',
+        'silent-letter': 'Silent Letter',
+        'phonics-merger': 'Phonics Merger',
+        'phonics_merger': 'Phonics Merger'
+      };
+
+      const dbCategory = categoryMap[category.toLowerCase()] || category;
+      console.log(`🔍 Querying Words table for randomized ${dbCategory} words`);
+
+      // Fetch more words than needed (to ensure we have enough even after randomization)
+      const fetchLimit = Math.max(count * 3, 100);
+
+      const { data: words, error } = await supabase
+        .from('Words')
+        .select('word, category, difficulty_level, pronunciation, definition, example_sentence')
+        .eq('category', dbCategory)
+        .eq('is_active', true)
+        .limit(fetchLimit);
+
+      if (error) {
+        console.error('❌ Error fetching words:', error);
+        throw error;
+      }
+
+      if (!words || words.length === 0) {
+        console.warn(`⚠️ No words found for category: ${dbCategory}`);
+        return { success: true, data: [] };
+      }
+
+      // Shuffle the array using Fisher-Yates algorithm
+      const shuffled = [...words];
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+      }
+
+      // Return only the requested count
+      const randomized = shuffled.slice(0, count);
+      console.log(`✅ Fetched ${randomized.length} randomized ${dbCategory} words`);
+      return { success: true, data: randomized };
+    } catch (error) {
+      console.error('❌ Error in getRandomizedWordsByCategory:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get all available word categories from the Words table
+   */
+  static async getAllWordCategories() {
+    try {
+      console.log('📚 Fetching all available word categories...');
+
+      const { data: words, error } = await supabase
+        .from('Words')
+        .select('category')
+        .eq('is_active', true)
+        .not('category', 'is', null);
+
+      if (error) {
+        console.error('❌ Error fetching categories:', error);
+        throw error;
+      }
+
+      // Get unique categories
+      const uniqueCategories = [...new Set(words?.map(w => w.category) || [])];
+      console.log(`✅ Found ${uniqueCategories.length} unique categories:`, uniqueCategories);
+
+      return { success: true, data: uniqueCategories };
+    } catch (error) {
+      console.error('❌ Error in getAllWordCategories:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
 }
 
 export { TeacherService }

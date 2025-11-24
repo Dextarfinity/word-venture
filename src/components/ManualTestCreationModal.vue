@@ -149,6 +149,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from "vue";
 import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
+import { TeacherService } from "@/services/teacherService.js";
 
 const props = defineProps({
   isOpen: {
@@ -190,6 +191,9 @@ const testSettings = ref({
   questionCount: "10",
   timeLimit: "15",
 });
+const suggestedWords = ref([]);
+const isLoadingWords = ref(false);
+const useRandomizedWords = ref(true); // Toggle for randomized vs ordered words
 
 // Computed properties
 const testTypeLabel = computed(() => {
@@ -246,6 +250,64 @@ const resetForm = () => {
     questionCount: "10",
     timeLimit: "15",
   };
+};
+
+// Load suggested words from database based on test type
+const loadSuggestedWords = async () => {
+  if (!props.testType) return;
+
+  isLoadingWords.value = true;
+  try {
+    console.log('📚 Loading suggested words for test type:', props.testType);
+    console.log('🎲 Using randomized words:', useRandomizedWords.value);
+
+    // Use randomized method if enabled, otherwise use ordered
+    let result;
+    if (useRandomizedWords.value) {
+      result = await TeacherService.getRandomizedWordsByCategory(props.testType, 20);
+    } else {
+      result = await TeacherService.getWordsByCategory(props.testType, 20);
+    }
+
+    if (result.success && result.data.length > 0) {
+      suggestedWords.value = result.data;
+      console.log('✅ Loaded suggested words:', suggestedWords.value);
+
+      // Auto-populate the first field based on test type
+      if (props.testType === 'cvc' && suggestedWords.value.length >= 5) {
+        // For CVC, populate the first 5 input fields
+        for (let i = 0; i < 5 && i < suggestedWords.value.length; i++) {
+          cvcWords.value[i] = suggestedWords.value[i].word;
+        }
+      } else if (props.testType === 'blending' && suggestedWords.value.length > 0) {
+        // For Blending, populate segments with comma-separated words
+        blendingData.value.segments = suggestedWords.value
+          .slice(0, 10)
+          .map(w => w.word)
+          .join(', ');
+      } else if (props.testType === 'silent-words' && suggestedWords.value.length > 0) {
+        // For Silent Words, populate with comma-separated words
+        silentWordsData.value.words = suggestedWords.value
+          .slice(0, 10)
+          .map(w => w.word)
+          .join(', ');
+      } else if (props.testType === 'phonics-merger' && suggestedWords.value.length > 0) {
+        // For Phonics Merger, populate examples with comma-separated words
+        phonicsData.value.examples = suggestedWords.value
+          .slice(0, 10)
+          .map(w => w.word)
+          .join(', ');
+      }
+    } else {
+      console.warn('⚠️ No words found for test type:', props.testType);
+      suggestedWords.value = [];
+    }
+  } catch (error) {
+    console.error('❌ Error loading suggested words:', error);
+    suggestedWords.value = [];
+  } finally {
+    isLoadingWords.value = false;
+  }
 };
 
 const closeModal = () => {
@@ -320,12 +382,14 @@ const saveTest = () => {
   }
 };
 
-// Watch for modal open/close to reset state
+// Watch for modal open/close to reset state and load words
 watch(
   () => props.isOpen,
-  (newValue) => {
+  async (newValue) => {
     if (newValue) {
       resetForm();
+      // Load suggested words from database when modal opens
+      await loadSuggestedWords();
     }
   }
 );
