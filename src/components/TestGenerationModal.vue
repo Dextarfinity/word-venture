@@ -3,20 +3,32 @@
     <div v-if="isOpen" class="modal-overlay" @click="closeModal">
       <Transition name="modal-scale" appear>
         <div v-if="isOpen" class="modal-card" @click.stop>
-      <!-- Question Text -->
-      <div class="question-section">
-        <h3 class="question-text">Generate {{ testTypeLabel }} Test?</h3>
-      </div>
+          <!-- Question Text -->
+          <div class="question-section">
+            <h3 class="question-text">Generate {{ testTypeLabel }} Test?</h3>
+          </div>
 
-      <!-- Action Buttons -->
-      <div class="action-buttons">
-        <button class="yes-btn" @click="playClick('teacher'); generateTest()">
-          <span class="btn-text">YES</span>
-        </button>
-        <button class="manual-btn" @click="playClick('teacher'); createManually()">
-          <span class="btn-text">NO, I'LL DO IT MANUALLY</span>
-        </button>
-      </div>
+          <!-- Action Buttons -->
+          <div class="action-buttons">
+            <button
+              class="yes-btn"
+              @click="
+                playClick('teacher');
+                generateTest();
+              "
+            >
+              <span class="btn-text">YES</span>
+            </button>
+            <button
+              class="manual-btn"
+              @click="
+                playClick('teacher');
+                createManually();
+              "
+            >
+              <span class="btn-text">NO, I'LL DO IT MANUALLY</span>
+            </button>
+          </div>
         </div>
       </Transition>
     </div>
@@ -26,6 +38,7 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount } from "vue";
 import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
+import { TeacherService } from "@/services/teacherService.js";
 
 const props = defineProps({
   isOpen: {
@@ -53,8 +66,8 @@ const { startMusic, stopMusic, playClick } = useAudio();
 const testTypeLabel = computed(() => {
   const labels = {
     "phonics-merger": "Phonics",
-    "cvc": "CVC",
-    "blending": "Blending",
+    cvc: "CVC",
+    blending: "Blending",
     "silent-words": "Silent Words",
   };
   return labels[props.testType] || "Test";
@@ -66,25 +79,77 @@ const closeModal = () => {
   emit("close");
 };
 
-const generateTest = () => {
-  playClick('teacher');
-  
-  // Emit generate event with test details
-  const generationData = {
-    testType: props.testType,
-    subcategory: props.subcategory,
-    taskData: props.taskData,
-    mode: "generate",
-  };
-  
-  console.log("Generating test:", generationData);
-  emit("generate", generationData);
-  closeModal();
+const generateTest = async () => {
+  playClick("teacher");
+
+  console.log("🎲 Auto-generating test for:", props.testType);
+
+  try {
+    // Determine how many words needed based on test type
+    const wordCount = props.testType === "cvc" ? 5 : 10;
+
+    // Fetch randomized words from database (already shuffled by Fisher-Yates in the service)
+    const result = await TeacherService.getRandomizedWordsByCategory(
+      props.testType,
+      wordCount
+    );
+
+    if (result.success && result.data && result.data.length > 0) {
+      console.log(
+        "✅ Fetched",
+        result.data.length,
+        "randomized words for auto-generation"
+      );
+
+      // Prepare test content based on test type
+      let testContent = {};
+
+      if (props.testType === "cvc") {
+        // All words are already randomized from database
+        testContent.words = result.data.map((w) => w.word);
+      } else if (props.testType === "blending") {
+        // All words are already randomized from database
+        testContent.segments = result.data.map((w) => w.word).join(", ");
+        testContent.difficulty = "medium";
+      } else if (props.testType === "silent-words") {
+        // All words are already randomized from database
+        testContent.words = result.data.map((w) => w.word).join(", ");
+        testContent.type = "mixed";
+      } else if (props.testType === "phonics-merger") {
+        // All words are already randomized from database
+        testContent.sounds = "/a/, /e/, /i/, /o/, /u/";
+        testContent.examples = result.data.map((w) => w.word).join(", ");
+      }
+
+      // Emit generate event with auto-populated content
+      const generationData = {
+        testType: props.testType,
+        subcategory: props.subcategory,
+        taskData: props.taskData,
+        mode: "generate",
+        testContent: testContent,
+        testSettings: {
+          questionCount: wordCount,
+          timeLimit: 15,
+        },
+      };
+
+      console.log("✅ Auto-generated test with randomized words:", generationData);
+      emit("generate", generationData);
+      closeModal();
+    } else {
+      console.error("❌ Failed to fetch words:", result.error);
+      alert("Failed to generate test. No words found for this category.");
+    }
+  } catch (error) {
+    console.error("❌ Error generating test:", error);
+    alert("Failed to generate test. Please try again.");
+  }
 };
 
 const createManually = () => {
-  playClick('teacher');
-  
+  playClick("teacher");
+
   // Emit manual event with test details
   const manualData = {
     testType: props.testType,
@@ -92,7 +157,7 @@ const createManually = () => {
     taskData: props.taskData,
     mode: "manual",
   };
-  
+
   console.log("Creating test manually:", manualData);
   emit("manual", manualData);
   closeModal();

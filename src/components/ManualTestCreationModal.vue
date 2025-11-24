@@ -254,59 +254,85 @@ const resetForm = () => {
 
 // Load suggested words from database based on test type
 const loadSuggestedWords = async () => {
-  if (!props.testType) return;
+  console.log('🚀 loadSuggestedWords called with testType:', props.testType);
+  
+  if (!props.testType) {
+    console.warn('⚠️ No testType provided, skipping word loading');
+    return;
+  }
 
   isLoadingWords.value = true;
   try {
     console.log('📚 Loading suggested words for test type:', props.testType);
     console.log('🎲 Using randomized words:', useRandomizedWords.value);
+    console.log('📦 TeacherService available:', !!TeacherService);
+    console.log('📦 getRandomizedWordsByCategory available:', !!TeacherService.getRandomizedWordsByCategory);
 
     // Use randomized method if enabled, otherwise use ordered
     let result;
     if (useRandomizedWords.value) {
+      console.log('🎲 Calling getRandomizedWordsByCategory...');
       result = await TeacherService.getRandomizedWordsByCategory(props.testType, 20);
     } else {
+      console.log('📊 Calling getWordsByCategory...');
       result = await TeacherService.getWordsByCategory(props.testType, 20);
     }
 
-    if (result.success && result.data.length > 0) {
+    console.log('📊 Result from TeacherService:', result);
+
+    if (result.success && result.data && result.data.length > 0) {
       suggestedWords.value = result.data;
-      console.log('✅ Loaded suggested words:', suggestedWords.value);
+      console.log('✅ Loaded suggested words:', suggestedWords.value.length, 'words');
+      console.log('📝 Sample words:', suggestedWords.value.slice(0, 3).map(w => w.word));
 
       // Auto-populate the first field based on test type
       if (props.testType === 'cvc' && suggestedWords.value.length >= 5) {
+        console.log('💡 Populating CVC words...');
         // For CVC, populate the first 5 input fields
         for (let i = 0; i < 5 && i < suggestedWords.value.length; i++) {
           cvcWords.value[i] = suggestedWords.value[i].word;
         }
+        console.log('✅ CVC words populated:', cvcWords.value);
       } else if (props.testType === 'blending' && suggestedWords.value.length > 0) {
+        console.log('💡 Populating Blending words...');
         // For Blending, populate segments with comma-separated words
         blendingData.value.segments = suggestedWords.value
           .slice(0, 10)
           .map(w => w.word)
           .join(', ');
+        console.log('✅ Blending words populated:', blendingData.value.segments);
       } else if (props.testType === 'silent-words' && suggestedWords.value.length > 0) {
+        console.log('💡 Populating Silent Words...');
         // For Silent Words, populate with comma-separated words
         silentWordsData.value.words = suggestedWords.value
           .slice(0, 10)
           .map(w => w.word)
           .join(', ');
+        console.log('✅ Silent Words populated:', silentWordsData.value.words);
       } else if (props.testType === 'phonics-merger' && suggestedWords.value.length > 0) {
+        console.log('💡 Populating Phonics Merger words...');
         // For Phonics Merger, populate examples with comma-separated words
         phonicsData.value.examples = suggestedWords.value
           .slice(0, 10)
           .map(w => w.word)
           .join(', ');
+        console.log('✅ Phonics Merger words populated:', phonicsData.value.examples);
       }
     } else {
-      console.warn('⚠️ No words found for test type:', props.testType);
+      console.warn('⚠️ No words found or failed:', {
+        success: result?.success,
+        dataLength: result?.data?.length,
+        error: result?.error
+      });
       suggestedWords.value = [];
     }
   } catch (error) {
     console.error('❌ Error loading suggested words:', error);
+    console.error('❌ Error stack:', error.stack);
     suggestedWords.value = [];
   } finally {
     isLoadingWords.value = false;
+    console.log('🏁 loadSuggestedWords finished');
   }
 };
 
