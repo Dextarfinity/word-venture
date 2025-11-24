@@ -12,7 +12,10 @@
         <div class="flex items-center justify-between px-6 py-4">
           <!-- Back Button -->
           <button
-            @click="playClick('student'); $router.push('/tabs/student-home')"
+            @click="
+              playClick('student');
+              $router.push('/tabs/student-home');
+            "
             class="flex items-center text-blue-600 font-semibold"
           >
             <ion-icon :icon="arrowBackOutline" class="mr-2 text-xl"></ion-icon>
@@ -174,7 +177,10 @@
     <!-- Sticky Microphone Button -->
     <div v-if="!isGenerating" class="sticky-microphone">
       <button
-        @click="playClick('student'); toggleListening()"
+        @click="
+          playClick('student');
+          toggleListening();
+        "
         class="microphone-button"
         :class="{ listening: isListening }"
       >
@@ -271,7 +277,14 @@
 </template>
 
 <script setup>
-import { IonPage, IonContent, IonButton, IonIcon, IonSpinner, toastController } from "@ionic/vue";
+import {
+  IonPage,
+  IonContent,
+  IonButton,
+  IonIcon,
+  IonSpinner,
+  toastController,
+} from "@ionic/vue";
 import {
   micOutline,
   stopOutline,
@@ -785,7 +798,7 @@ const initNativeSpeechRecognition = async () => {
     }
 
     speechSystemReady.value = true;
-    activeRecognitionSystem.value = 'native';
+    activeRecognitionSystem.value = "native";
     console.log("✅ Native speech recognition ready (Capacitor)");
   } catch (error) {
     console.error("❌ Native speech recognition initialization failed:", error);
@@ -1144,7 +1157,7 @@ const initVoskFallback = async () => {
 
     // Mark Vosk as ready
     speechSystemReady.value = true;
-    activeRecognitionSystem.value = 'vosk';
+    activeRecognitionSystem.value = "vosk";
     console.log("✅ Vosk offline recognition ready");
     console.log("✅ Starting immediate word checking (no buffering delays)");
   } catch (error) {
@@ -1161,7 +1174,8 @@ const initWebSpeechFallback = async () => {
   try {
     console.log("🎤 Initializing Web Speech API fallback");
 
-    const WebSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const WebSpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!WebSpeechRecognition) {
       console.error("❌ Web Speech API not available");
@@ -1191,7 +1205,7 @@ const initWebSpeechFallback = async () => {
 
     console.log("✅ Web Speech API fallback initialized");
     speechSystemReady.value = true;
-    activeRecognitionSystem.value = 'webspeech';
+    activeRecognitionSystem.value = "webspeech";
     return true;
   } catch (error) {
     console.error("❌ Failed to initialize Web Speech API:", error);
@@ -1352,7 +1366,9 @@ const loadWordsFromAssignment = async () => {
     }
 
     const testContent = result.data.assignment.task.test_content;
+    const taskCategory = result.data.assignment.task.category; // Get the actual task category
     console.log("📝 Test content:", testContent);
+    console.log("📝 Task category:", taskCategory);
 
     // Parse words from test content
     let wordList = [];
@@ -1366,20 +1382,32 @@ const loadWordsFromAssignment = async () => {
     } else if (testContent?.words && Array.isArray(testContent.words)) {
       // If test_content is an object with words property
       wordList = testContent.words.map((word) => word.toString().trim().toUpperCase());
-    } else if (testContent?.type) {
-      // If test_content contains generation settings, generate words based on type
-      console.log("📝 Test content contains generation settings, generating words...");
+    } else if (testContent?.segments && typeof testContent.segments === "string") {
+      // For Blending tests with segments
+      wordList = testContent.segments.split(",").map((word) => word.trim().toUpperCase());
+    } else if (testContent?.examples && typeof testContent.examples === "string") {
+      // For Phonics Merger tests with examples
+      wordList = testContent.examples.split(",").map((word) => word.trim().toUpperCase());
+    } else {
+      // If no words found in test content, generate based on task category
+      console.log("📝 No words in test content, generating based on task category...");
 
-      const wordCount = 5; // Default to 5 words for assignments
-      const category = testContent.type || "cvc";
+      const wordCount = taskCategory === "cvc" ? 5 : 10;
+
+      // Map task category to database category
+      const categoryMap = {
+        cvc: "CVC",
+        blending: "Blending",
+        "silent-words": "Silent Letter",
+        "phonics-merger": "Phonics Merger",
+      };
+
+      const dbCategory = categoryMap[taskCategory] || "CVC";
+      console.log(`🎯 Generating ${wordCount} words for category: ${dbCategory}`);
 
       // Generate words based on category
-      const generatedWords = await generateWordsForCategory(category, wordCount);
+      const generatedWords = await generateWordsForCategory(dbCategory, wordCount);
       wordList = generatedWords;
-    } else {
-      console.warn("⚠️ Unknown test content format, falling back to default");
-      await fetchWordsDefault();
-      return;
     }
 
     // Filter out empty words and create word objects
@@ -1682,7 +1710,7 @@ const openReadingOverlay = () => {
 
 const closeReadingOverlay = () => {
   showReadingOverlay.value = false;
-  
+
   // Check if all modals are closed and play reading music
   checkAndPlayReading();
 };
@@ -1702,7 +1730,7 @@ const handleStartReading = async () => {
 
 const closeWordSelection = () => {
   showWordSelection.value = false;
-  
+
   // Check if all modals are closed and play reading music
   checkAndPlayReading();
 };
@@ -1716,7 +1744,7 @@ const handleShowReadinessModal = () => {
 
 const closeReadinessModal = () => {
   showReadinessModal.value = false;
-  
+
   // Check if all modals are closed and play reading music
   checkAndPlayReading();
 };
@@ -1731,7 +1759,7 @@ const handleStudentReady = () => {
   // Just close the modal and stay on the current page
   closeReadinessModal();
   console.log("🔄 Modal closed, staying on WordReadingPage");
-  
+
   // Check if all modals are closed and play reading music
   checkAndPlayReading();
 };
@@ -1855,7 +1883,7 @@ const handleMiscueReviewComplete = (reviewData) => {
     `📊 Final Score: ${correctWordsCount.value}/${totalWordsAttempted.value} words correct`
   );
   showResultsModal.value = true;
-  
+
   // Check if all modals are closed and play reading music
   checkAndPlayReading();
 };
@@ -1869,7 +1897,7 @@ const handleSkipMiscueReview = () => {
     `📊 Final Score: ${correctWordsCount.value}/${totalWordsAttempted.value} words correct`
   );
   showResultsModal.value = true;
-  
+
   // Check if all modals are closed and play reading music
   checkAndPlayReading();
 };
@@ -1877,12 +1905,13 @@ const handleSkipMiscueReview = () => {
 // Helper function to check if all modals are closed and play reading music
 const checkAndPlayReading = () => {
   // Check if all modals are closed
-  const allModalsClosed = !showReadingOverlay.value && 
-                         !showWordSelection.value && 
-                         !showReadinessModal.value && 
-                         !showResultsModal.value && 
-                         !showMiscueReview.value;
-  
+  const allModalsClosed =
+    !showReadingOverlay.value &&
+    !showWordSelection.value &&
+    !showReadinessModal.value &&
+    !showResultsModal.value &&
+    !showMiscueReview.value;
+
   if (allModalsClosed) {
     console.log("🎵 All modals closed - playing reading music");
     startMusic(MUSIC_TYPES.READING, 0.3);
@@ -2401,7 +2430,7 @@ const showAchievementToast = async (achievement) => {
   };
 
   let iconFileName = achievement.badge_icon || achievement.achievement_title;
-  
+
   // Remove .png if it exists and convert to lowercase for mapping
   const baseFileName = iconFileName.toLowerCase().replace(".png", "");
   const mappedFileName = iconMapping[baseFileName + ".png"] || iconMapping[iconFileName];
@@ -2420,9 +2449,9 @@ const showAchievementToast = async (achievement) => {
 
   // Construct badge image path (encode spaces in folder names)
   const badgeImagePath = `/img/CapyBuddy%20Assets/Achievement%20Badges/${iconFileName}`;
-  
+
   // Create custom achievement notification overlay
-  const overlay = document.createElement('div');
+  const overlay = document.createElement("div");
   overlay.style.cssText = `
     position: fixed;
     top: 20px;
@@ -2442,13 +2471,17 @@ const showAchievementToast = async (achievement) => {
     max-width: 400px;
     animation: slideInDown 0.5s ease-out;
   `;
-  
+
   overlay.innerHTML = `
     <img src="${badgeImagePath}" alt="${achievement.achievement_title}" 
          style="width: 50px; height: 50px; border-radius: 8px; object-fit: cover; flex-shrink: 0; border: 2px solid #333;" />
     <div style="flex: 1;">
-      <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">🏆 ${achievement.achievement_title}</div>
-      <div style="font-size: 14px; opacity: 0.9;">+${achievement.points_required || 0} points earned!</div>
+      <div style="font-weight: bold; font-size: 16px; margin-bottom: 4px;">🏆 ${
+        achievement.achievement_title
+      }</div>
+      <div style="font-size: 14px; opacity: 0.9;">+${
+        achievement.points_required || 0
+      } points earned!</div>
     </div>
     <button onclick="this.parentElement.remove()" style="background: none; border: none; color: #333; font-size: 18px; cursor: pointer; padding: 4px; opacity: 0.7;">✓</button>
   `;
@@ -2459,16 +2492,16 @@ const showAchievementToast = async (achievement) => {
   // Auto-remove after 5 seconds
   setTimeout(() => {
     if (overlay.parentNode) {
-      overlay.style.animation = 'slideOutUp 0.5s ease-in';
+      overlay.style.animation = "slideOutUp 0.5s ease-in";
       setTimeout(() => overlay.remove(), 500);
     }
   }, 5000);
-  
+
   // Inject the custom HTML into the toast after it's presented
   const toastElement = await toast.getElement();
-  const messageElement = toastElement.querySelector('.toast-message');
+  const messageElement = toastElement.querySelector(".toast-message");
   if (messageElement) {
-    messageElement.innerHTML = '';
+    messageElement.innerHTML = "";
     messageElement.appendChild(container);
   }
 };
@@ -2624,14 +2657,16 @@ const toggleListening = async () => {
       const permissionStatus = await SpeechRecognition.checkPermissions();
       console.log("🎤 Permission status:", permissionStatus);
 
-      if (permissionStatus.speechRecognition !== 'granted') {
+      if (permissionStatus.speechRecognition !== "granted") {
         console.log("🎤 Requesting speech recognition permissions...");
         const result = await SpeechRecognition.requestPermissions();
         console.log("🎤 Permission request result:", result);
-        
+
         if (!result.granted) {
           console.error("❌ Speech recognition permissions denied");
-          alert("Microphone permission is required for speech recognition. Please enable it in your device settings.");
+          alert(
+            "Microphone permission is required for speech recognition. Please enable it in your device settings."
+          );
           isListening.value = false;
           return;
         }
@@ -2895,10 +2930,10 @@ const checkWord = (spoken) => {
   if (similarity >= 0.6) {
     console.log("✅ Word matched! Marking as correct");
     target.status = "correct"; // green
-    
+
     // 🎵 Play correct word sound
     playWordFeedback(true);
-    
+
     streak.value++; // Increase streak
     consecutiveErrors.value = 0; // Reset consecutive errors
     correctWordsCount.value++; // Track correct words for results
@@ -2921,10 +2956,10 @@ const checkWord = (spoken) => {
   } else {
     console.log("❌ Word not matched. Marking as incorrect");
     target.status = "incorrect"; // red
-    
+
     // 🎵 Play incorrect word sound
     playWordFeedback(false);
-    
+
     consecutiveErrors.value++; // Increase consecutive errors
 
     // Track word category for phonics progress (incorrect attempt)
@@ -3229,7 +3264,7 @@ onBeforeUnmount(() => {
 .achievement-toast {
   --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --color: #ffffff;
-  font-family: 'Jua', cursive;
+  font-family: "Jua", cursive;
   --min-height: 90px;
 }
 
