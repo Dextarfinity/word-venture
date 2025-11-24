@@ -378,9 +378,12 @@ const isTaskCompleted = (task) => {
 const isTaskOverdue = (task) => {
   const dueDate = task.due_date || task.task.due_date;
   if (!dueDate) return false;
-  const due = new Date(dueDate);
+  // dueDate is now an ISO string with both date and time
+  // e.g., "2025-11-25T14:30:00.000Z"
+  const dueDatetime = new Date(dueDate);
   const now = new Date();
-  return due < now && !isTaskCompleted(task);
+  // Task is overdue if due date/time is in the past AND task is not completed
+  return dueDatetime < now && !isTaskCompleted(task);
 };
 
 const handleOverdueTaskClick = () => {

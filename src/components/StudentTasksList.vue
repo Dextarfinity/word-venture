@@ -305,7 +305,12 @@ const getTaskCardClass = (task) => {
 
 const isOverdue = (dueDate) => {
   if (!dueDate) return false;
-  return new Date(dueDate) < new Date();
+  // dueDate is now an ISO string with both date and time
+  // e.g., "2025-11-25T14:30:00.000Z"
+  const dueDatetime = new Date(dueDate);
+  const now = new Date();
+  // Task is overdue if due date/time is in the past
+  return dueDatetime < now;
 };
 
 const isLevelCompatible = (task) => {

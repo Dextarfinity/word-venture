@@ -537,15 +537,23 @@ const saveTask = async () => {
     }
 
     // Prepare task data according to database schema
+    // Combine date and time into a single ISO datetime string
+    let dueDateTimeISO = null;
+    if (taskData.value.dueDate) {
+      const dateStr = taskData.value.dueDate; // Format: YYYY-MM-DD
+      const timeStr = taskData.value.dueTime || "09:00"; // Format: HH:MM
+      const dateTimeStr = `${dateStr}T${timeStr}:00`; // Combine to YYYY-MM-DDTHH:MM:SS
+      dueDateTimeISO = new Date(dateTimeStr).toISOString();
+    }
+
     const newTaskData = {
       title: taskData.value.title.trim(),
       description: taskData.value.instructions.trim(),
       category: selectedCategory.value,
       subcategory: selectedCategory.value, // Using same value for now
       priority: taskData.value.priority,
-      dueDate: taskData.value.dueDate
-        ? new Date(taskData.value.dueDate).toISOString()
-        : null,
+      dueDate: dueDateTimeISO, // Now includes both date and time
+      dueTime: taskData.value.dueTime || "09:00", // Store time separately for reference
       instructions: taskData.value.instructions.trim(),
       maxPoints: 100, // Default value
       generationMode: taskData.value.generationMode || "manual",
