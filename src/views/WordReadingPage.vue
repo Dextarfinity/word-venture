@@ -1392,7 +1392,7 @@ const loadWordsFromAssignment = async () => {
       // If no words found in test content, generate based on task category
       console.log("📝 No words in test content, generating based on task category...");
 
-      const wordCount = taskCategory === "cvc" ? 5 : 10;
+      const wordCount = 5; // Always generate 5 words
 
       // Map task category to database category
       const categoryMap = {
