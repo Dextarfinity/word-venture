@@ -18,7 +18,7 @@ const AUDIO_FILES = {
   BGM_LOBBY: '/audio/lobby.mp3',
   
   // Sound Effects
-  SFX_CLICK_STUDENT: '/audio/click button student.mp3',
+  SFX_CLICK_STUDENT: '/audio/click-button-student.mp3',
   SFX_CLICK_TEACHER: '/audio/click button teacher.mp3',
   SFX_CORRECT_WORD: '/audio/correct word.mp3',
   SFX_INCORRECT_WORD: '/audio/incorrect word.mp3',
