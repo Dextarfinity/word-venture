@@ -891,7 +891,7 @@ const startReading = async () => {
 
   if (isNativePlatform) {
     console.log("🎯 Starting reading with native speech recognition");
-    await startNativeSpeechRecognition();
+    startNativeSpeechListening();
   } else if (recognition) {
     console.log("🎯 Starting reading with Web Speech API");
     recognition.start();
@@ -908,7 +908,7 @@ const stopReading = async () => {
   clearTimeout(wordTimer.value);
 
   if (isNativePlatform) {
-    await stopNativeSpeechRecognition();
+    SpeechRecognition.stop().catch(err => console.log("Native speech already stopped"));
   } else if (recognition) {
     recognition.stop();
   }
@@ -1131,6 +1131,53 @@ const goBackToSelection = () => {
 };
 
 // Native speech recognition functions for mobile
+// Start native speech recognition with continuous listening
+const startNativeSpeechListening = async () => {
+  try {
+    console.log("🎤 Starting native speech recognition...");
+    
+    // Continuously listen for speech
+    const listenLoop = async () => {
+      if (!listening.value) return;
+      
+      try {
+        const result = await SpeechRecognition.start({
+          language: 'en-US', // English for story reading
+          maxResults: 1,
+          prompt: 'Say the word...',
+          showPopup: false, // Don't show the default popup
+        });
+
+        if (result && result.value && result.value.length > 0) {
+          const transcript = result.value[0].toLowerCase().trim();
+          console.log("🎤 Native speech recognized:", transcript);
+          checkWord(transcript, true);
+        }
+
+        // Continue listening for next word
+        if (listening.value) {
+          setTimeout(listenLoop, 500); // Small delay before next listen
+        }
+      } catch (error) {
+        // User might have cancelled or there was an error
+        if (listening.value && error.message !== 'No recognition result') {
+          console.log("🎤 Native speech listening continuing...");
+        }
+        
+        // Continue listening for next word after a delay
+        if (listening.value) {
+          setTimeout(listenLoop, 1000);
+        }
+      }
+    };
+
+    // Start the listen loop
+    listenLoop();
+  } catch (error) {
+    console.error("❌ Native speech listening failed:", error);
+  }
+};
+
 const startNativeSpeechRecognition = async () => {
   try {
     console.log("🎤 Starting native speech recognition...");

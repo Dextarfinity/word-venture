@@ -1160,9 +1160,9 @@ const initVoskOfflineRecognition = async () => {
 // 🎙️ Toggle mic (offline mode only)
 const toggleListening = async () => {
   if (isNativePlatform) {
-    // Use native speech recognition on mobile
+    // Use native speech recognition on mobile with continuous listening
     if (!isListening.value) {
-      await startNativeSpeechRecognition();
+      await startNativeSpeechListening();
     } else {
       await stopNativeSpeechRecognition();
     }
@@ -1527,6 +1527,54 @@ const updateUserProgress = async (stats) => {
 };
 
 // Native speech recognition functions for mobile
+// Start native speech recognition with continuous listening
+const startNativeSpeechListening = async () => {
+  try {
+    console.log("🎤 Starting native speech recognition...");
+    
+    // Continuously listen for speech
+    const listenLoop = async () => {
+      if (!isListening.value) return;
+      
+      try {
+        const result = await SpeechRecognition.start({
+          language: 'en-US', // English for word reading
+          maxResults: 1,
+          prompt: 'Say the word...',
+          showPopup: false, // Don't show the default popup
+        });
+
+        if (result && result.value && result.value.length > 0) {
+          const transcript = result.value[0].toLowerCase().trim();
+          console.log("🎤 Native speech recognized:", transcript);
+          checkWord(transcript);
+        }
+
+        // Continue listening for next word
+        if (isListening.value) {
+          setTimeout(listenLoop, 500); // Small delay before next listen
+        }
+      } catch (error) {
+        // User might have cancelled or there was an error
+        if (isListening.value && error.message !== 'No recognition result') {
+          console.log("🎤 Native speech listening continuing...");
+        }
+        
+        // Continue listening for next word after a delay
+        if (isListening.value) {
+          setTimeout(listenLoop, 1000);
+        }
+      }
+    };
+
+    // Start the listen loop
+    isListening.value = true;
+    listenLoop();
+  } catch (error) {
+    console.error("❌ Native speech listening failed:", error);
+  }
+};
+
 const startNativeSpeechRecognition = async () => {
   try {
     console.log("🎤 Starting native speech recognition");
