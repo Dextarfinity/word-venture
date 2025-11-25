@@ -1253,17 +1253,78 @@ const startReading = () => {
   nextTick(() => autoScrollToCurrent());
 
   // Show user which mode is active
-  const mode = usingOffline.value ? "Vosk offline" : "Web Speech API online";
+  let mode = "Unknown mode";
+  if (activeRecognitionSystem.value === 'native') {
+    mode = "Native Android speech recognition";
+    startNativeSpeechListening();
+  } else if (usingOffline.value) {
+    mode = "Vosk offline";
+  } else {
+    mode = "Web Speech API online";
+    if (recognition.value) {
+      recognition.value.start();
+    }
+  }
   console.log(`🎯 Starting reading with ${mode} mode`);
+};
 
-  if (!usingOffline.value && recognition.value) {
-    recognition.value.start();
+// Start native speech recognition for Android
+const startNativeSpeechListening = async () => {
+  try {
+    console.log("🎤 Starting native speech recognition...");
+    
+    // Continuously listen for speech
+    const listenLoop = async () => {
+      if (!listening.value) return;
+      
+      try {
+        const result = await SpeechRecognition.start({
+          language: 'fil-PH', // Filipino language
+          maxResults: 1,
+          prompt: 'Speak the word...',
+          showPopup: false, // Don't show the default popup
+        });
+
+        if (result && result.value && result.value.length > 0) {
+          const transcript = result.value[0].toLowerCase().trim();
+          console.log("🎤 Native speech recognized:", transcript);
+          checkWord(transcript, true);
+        }
+
+        // Continue listening for next word
+        if (listening.value) {
+          setTimeout(listenLoop, 500); // Small delay before next listen
+        }
+      } catch (error) {
+        // User might have cancelled or there was an error
+        if (listening.value && error.message !== 'No recognition result') {
+          console.log("🎤 Native speech listening continuing...");
+        }
+        
+        // Continue listening for next word after a delay
+        if (listening.value) {
+          setTimeout(listenLoop, 1000);
+        }
+      }
+    };
+
+    // Start the listen loop
+    listenLoop();
+  } catch (error) {
+    console.error("❌ Native speech listening failed:", error);
   }
 };
 
 const stopReading = () => {
   listening.value = false;
-  if (!usingOffline.value && recognition.value) recognition.value.stop();
+  
+  // Stop based on active system
+  if (activeRecognitionSystem.value === 'native') {
+    SpeechRecognition.stop().catch(err => console.log("Native speech already stopped"));
+  } else if (!usingOffline.value && recognition.value) {
+    recognition.value.stop();
+  }
+  
   clearTimeout(wordTimer.value);
   console.log("🛑 Reading stopped");
   calculateProficiency();

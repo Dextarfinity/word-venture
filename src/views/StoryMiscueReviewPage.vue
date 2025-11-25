@@ -16,7 +16,13 @@
       <div class="header-container">
         <div class="header-content">
           <div class="header-left">
-            <button @click="playClick('student'); skipReview()" class="back-button">
+            <button
+              @click="
+                playClick('student');
+                skipReview();
+              "
+              class="back-button"
+            >
               <ion-icon :icon="arrowBackOutline" />
             </button>
             <div class="header-text">
@@ -24,7 +30,15 @@
               <p class="header-subtitle">Let's improve your reading skills</p>
             </div>
           </div>
-          <button @click="playClick('student'); skipReview()" class="skip-button">Skip</button>
+          <button
+            @click="
+              playClick('student');
+              skipReview();
+            "
+            class="skip-button"
+          >
+            Skip
+          </button>
         </div>
       </div>
 
@@ -71,7 +85,10 @@
           </div>
 
           <button
-            @click="playClick('student'); speakWord(currentStoryMiscue?.expected_word)"
+            @click="
+              playClick('student');
+              speakWord(currentStoryMiscue?.expected_word);
+            "
             class="audio-button"
             :disabled="isSpeaking"
           >
@@ -87,7 +104,9 @@
 
           <!-- Previous attempt info -->
           <div v-if="currentStoryMiscue?.actual_reading" class="attempt-info">
-            <p class="attempt-label">You read: "{{ currentStoryMiscue.actual_reading }}"</p>
+            <p class="attempt-label">
+              You read: "{{ currentStoryMiscue.actual_reading }}"
+            </p>
             <p class="attempt-detail">
               {{ getErrorTypeMessage(currentStoryMiscue.miscue_type) }}
             </p>
@@ -118,7 +137,10 @@
 
           <div class="microphone-container">
             <button
-              @click="playClick('student'); toggleListening()"
+              @click="
+                playClick('student');
+                toggleListening();
+              "
               class="microphone-button"
               :class="{
                 listening: isListening,
@@ -140,13 +162,23 @@
       </div>
 
       <!-- Feedback Modal -->
-      <div v-if="showFeedbackModal" class="feedback-modal-overlay" @click="closeFeedbackModal">
+      <div
+        v-if="showFeedbackModal"
+        class="feedback-modal-overlay"
+        @click="closeFeedbackModal"
+      >
         <div class="feedback-modal" @click.stop>
-          <div class="feedback-header" :class="{ correct: lastAttemptCorrect, incorrect: !lastAttemptCorrect }">
-            <ion-icon :icon="lastAttemptCorrect ? checkmarkCircleOutline : alertCircleOutline" class="feedback-icon" />
-            <h2>{{ lastAttemptCorrect ? 'Great Job!' : 'Almost There!' }}</h2>
+          <div
+            class="feedback-header"
+            :class="{ correct: lastAttemptCorrect, incorrect: !lastAttemptCorrect }"
+          >
+            <ion-icon
+              :icon="lastAttemptCorrect ? checkmarkCircleOutline : alertCircleOutline"
+              class="feedback-icon"
+            />
+            <h2>{{ lastAttemptCorrect ? "Great Job!" : "Almost There!" }}</h2>
           </div>
-          
+
           <div class="feedback-content">
             <div class="word-comparison">
               <div class="comparison-row">
@@ -157,7 +189,9 @@
               </div>
               <div class="comparison-row">
                 <span class="label">Correct word:</span>
-                <span class="expected-word">"{{ currentStoryMiscue?.expected_word }}"</span>
+                <span class="expected-word"
+                  >"{{ currentStoryMiscue?.expected_word }}"</span
+                >
               </div>
             </div>
 
@@ -170,8 +204,12 @@
             </div>
           </div>
 
-          <button @click="closeFeedbackModal" class="feedback-button" :class="{ correct: lastAttemptCorrect }">
-            {{ lastAttemptCorrect ? 'Continue' : 'Try Again' }}
+          <button
+            @click="closeFeedbackModal"
+            class="feedback-button"
+            :class="{ correct: lastAttemptCorrect }"
+          >
+            {{ lastAttemptCorrect ? "Continue" : "Try Again" }}
           </button>
         </div>
       </div>
@@ -215,15 +253,15 @@ try {
   const storedMiscues = sessionStorage.getItem("storyMiscues");
   const storedSessionId = sessionStorage.getItem("storySessionId");
   const storedTitle = sessionStorage.getItem("storyTitle");
-  
+
   if (storedMiscues) {
     loadedMiscues.value = JSON.parse(storedMiscues);
   }
-  
+
   if (storedSessionId) {
     loadedSessionId.value = Number(storedSessionId);
   }
-  
+
   if (storedTitle) {
     loadedStoryTitle.value = storedTitle;
   }
@@ -250,7 +288,7 @@ const correctedWords = ref(new Set());
 // Feedback modal state
 const showFeedbackModal = ref(false);
 const lastAttemptCorrect = ref(false);
-const lastSpokenWord = ref('');
+const lastSpokenWord = ref("");
 
 // Repetition tracking - maps word index to repetition count
 const wordRepetitions = ref(new Map());
@@ -425,12 +463,12 @@ const initNativeSpeechRecognition = () => {
     console.log("🎤 Initializing native (Capacitor) speech recognition");
 
     SpeechRecognition.checkPermissions().then(({ speechRecognition }) => {
-      if (speechRecognition === 'granted') {
-        console.log('✅ Speech recognition permission granted');
+      if (speechRecognition === "granted") {
+        console.log("✅ Speech recognition permission granted");
         speechSystemReady.value = true;
-        activeRecognitionSystem.value = 'native';
+        activeRecognitionSystem.value = "native";
       } else {
-        console.log('⚠️ Speech recognition permission not granted, will request on use');
+        console.log("⚠️ Speech recognition permission not granted, will request on use");
       }
     });
   } catch (error) {
@@ -444,7 +482,8 @@ const initWebSpeechAPI = () => {
   try {
     console.log("🎤 Initializing Web Speech API");
 
-    const WebSpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const WebSpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!WebSpeechRecognition) {
       console.warn("⚠️ Web Speech API not available in this browser");
@@ -483,7 +522,7 @@ const initWebSpeechAPI = () => {
     };
 
     speechSystemReady.value = true;
-    activeRecognitionSystem.value = 'webspeech';
+    activeRecognitionSystem.value = "webspeech";
     console.log("✅ Web Speech API initialized successfully");
   } catch (error) {
     console.error("❌ Failed to initialize Web Speech API:", error);
@@ -501,7 +540,7 @@ const toggleListening = async () => {
   if (!isListening.value) {
     // Start listening
     isListening.value = true;
-    
+
     if (isNativePlatform) {
       // Use native Capacitor Speech Recognition
       try {
@@ -509,14 +548,16 @@ const toggleListening = async () => {
         const permissionStatus = await SpeechRecognition.checkPermissions();
         console.log("🎤 Permission status:", permissionStatus);
 
-        if (permissionStatus.speechRecognition !== 'granted') {
+        if (permissionStatus.speechRecognition !== "granted") {
           console.log("🎤 Requesting speech recognition permissions...");
           const result = await SpeechRecognition.requestPermissions();
           console.log("🎤 Permission request result:", result);
-          
+
           if (!result.granted) {
             console.error("❌ Speech recognition permissions denied");
-            alert("Microphone permission is required for speech recognition. Please enable it in your device settings.");
+            alert(
+              "Microphone permission is required for speech recognition. Please enable it in your device settings."
+            );
             isListening.value = false;
             return;
           }
@@ -606,7 +647,10 @@ const checkWord = async (spoken) => {
   console.log(`📊 Repetition count for word "${expectedWord}": ${currentCount + 1}`);
 
   // Simple similarity check
-  const similarity = calculateSimilarity(spoken.toUpperCase(), expectedWord.toUpperCase());
+  const similarity = calculateSimilarity(
+    spoken.toUpperCase(),
+    expectedWord.toUpperCase()
+  );
 
   if (similarity >= 0.6) {
     console.log("✅ Word corrected!");
@@ -659,7 +703,7 @@ const checkWord = async (spoken) => {
 // Close feedback modal and move to next word if correct
 const closeFeedbackModal = () => {
   showFeedbackModal.value = false;
-  
+
   if (lastAttemptCorrect.value) {
     // Move to next word automatically if correct
     setTimeout(() => {
@@ -840,7 +884,7 @@ const finishReview = () => {
   sessionStorage.removeItem("storyMiscues");
   sessionStorage.removeItem("storySessionId");
   sessionStorage.removeItem("storyTitle");
-  
+
   router.push("/tabs/stories");
 };
 
@@ -850,23 +894,30 @@ const getCapybaraExpression = () => {
 
   if (percentage < 30) {
     // Start - bored/neutral
-    return new URL("../img/CapyBuddy Assets/Capybara/capybara (16).png", import.meta.url).href;
+    return new URL("../img/CapyBuddy Assets/Capybara/capybara (16).png", import.meta.url)
+      .href;
   } else if (percentage < 60) {
     // Progress - encouraging smile
-    return new URL("../img/CapyBuddy Assets/Capybara/capybara (17).png", import.meta.url).href;
+    return new URL("../img/CapyBuddy Assets/Capybara/capybara (17).png", import.meta.url)
+      .href;
   } else if (percentage < 90) {
     // Almost there - happy
-    return new URL("../img/CapyBuddy Assets/Capybara/capybara (15).png", import.meta.url).href;
+    return new URL("../img/CapyBuddy Assets/Capybara/capybara (15).png", import.meta.url)
+      .href;
   } else {
     // Completed - love/celebrate
-    return new URL("../img/CapyBuddy Assets/Capybara/capybara (13).png", import.meta.url).href;
+    return new URL("../img/CapyBuddy Assets/Capybara/capybara (13).png", import.meta.url)
+      .href;
   }
 };
 
 // Handle image loading errors
 const handleImageError = (event) => {
   console.warn("Failed to load mascot image, using fallback");
-  event.target.src = new URL("../img/CapyBuddy Assets/Capybara/capybara (17).png", import.meta.url).href;
+  event.target.src = new URL(
+    "../img/CapyBuddy Assets/Capybara/capybara (17).png",
+    import.meta.url
+  ).href;
 };
 
 // Get error type message
@@ -886,7 +937,7 @@ const getErrorTypeMessage = (errorType) => {
 onMounted(async () => {
   console.log("🎵 Starting reading music for StoryMiscueReviewPage...");
   startMusic(MUSIC_TYPES.READING, 0.3);
-  
+
   console.log("📖 Story Miscue Review Page mounted");
   console.log("📊 Loaded miscues:", loadedMiscues.value.length);
   console.log("📋 Session ID:", loadedSessionId.value);
@@ -914,7 +965,7 @@ onMounted(async () => {
 onBeforeUnmount(async () => {
   console.log("🔇 Stopping reading music for StoryMiscueReviewPage...");
   stopMusic();
-  
+
   // Clean up speech recognition
   if (isNativePlatform) {
     try {
