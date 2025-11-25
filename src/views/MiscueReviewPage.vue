@@ -198,6 +198,7 @@ import { useAuth } from "@/composables/services";
 import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
 import { Capacitor } from "@capacitor/core";
 import { SpeechRecognition } from "@capacitor-community/speech-recognition";
+import { TextToSpeech } from "@capacitor-community/text-to-speech";
 import supabase from "../supabase.js";
 
 // Props
@@ -350,45 +351,64 @@ const processPendingRepetitions = async () => {
 };
 
 // Text-to-speech function
-const speakWord = (word) => {
+const speakWord = async (word) => {
   if (!word) return;
 
   isSpeaking.value = true;
 
-  // Check if speech synthesis is supported
-  if ("speechSynthesis" in window) {
-    // Cancel any ongoing speech
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(word);
-    utterance.rate = 0.8; // Slightly slower for learning
-    utterance.pitch = 1;
-    utterance.volume = 1;
-
-    // Handle speech end
-    utterance.onend = () => {
+  try {
+    if (isNativePlatform) {
+      // Use Capacitor Text-to-Speech for Android/iOS
+      console.log("🔊 Using Capacitor TTS for:", word);
+      await TextToSpeech.speak({
+        text: word,
+        lang: "en-US",
+        rate: 0.8, // Slightly slower for learning
+        pitch: 1.0,
+        volume: 1.0,
+      });
       isSpeaking.value = false;
-    };
+    } else {
+      // Use Web Speech API for web browsers
+      console.log("🔊 Using Web Speech API for:", word);
+      if ("speechSynthesis" in window) {
+        // Cancel any ongoing speech
+        window.speechSynthesis.cancel();
 
-    utterance.onerror = () => {
-      isSpeaking.value = false;
-    };
+        const utterance = new SpeechSynthesisUtterance(word);
+        utterance.rate = 0.8; // Slightly slower for learning
+        utterance.pitch = 1;
+        utterance.volume = 1;
 
-    // Try to use a clear English voice
-    const voices = window.speechSynthesis.getVoices();
-    const englishVoice = voices.find(
-      (voice) =>
-        voice.lang.startsWith("en") &&
-        (voice.name.includes("Google") || voice.name.includes("Microsoft"))
-    );
+        // Handle speech end
+        utterance.onend = () => {
+          isSpeaking.value = false;
+        };
 
-    if (englishVoice) {
-      utterance.voice = englishVoice;
+        utterance.onerror = () => {
+          isSpeaking.value = false;
+        };
+
+        // Try to use a clear English voice
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(
+          (voice) =>
+            voice.lang.startsWith("en") &&
+            (voice.name.includes("Google") || voice.name.includes("Microsoft"))
+        );
+
+        if (englishVoice) {
+          utterance.voice = englishVoice;
+        }
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        console.warn("Speech synthesis not supported in this browser");
+        isSpeaking.value = false;
+      }
     }
-
-    window.speechSynthesis.speak(utterance);
-  } else {
-    console.warn("Speech synthesis not supported in this browser");
+  } catch (error) {
+    console.error("❌ Error speaking word:", error);
     isSpeaking.value = false;
   }
 };

@@ -55,6 +55,8 @@
 import { IonIcon } from "@ionic/vue";
 import { volumeHighOutline } from "ionicons/icons";
 import { defineProps, defineEmits, ref, watch, onBeforeUnmount } from "vue";
+import { Capacitor } from "@capacitor/core";
+import { TextToSpeech } from "@capacitor-community/text-to-speech";
 import { useAudio, MUSIC_TYPES } from "@/composables/useAudio";
 
 // Audio system
@@ -132,6 +134,40 @@ const loadVoices = () => {
 // Text-to-Speech functionality for Grade 1 students
 const speakWord = async (wordText) => {
   try {
+    const isNativePlatform = Capacitor.isNativePlatform();
+
+    if (isNativePlatform) {
+      // Use native Capacitor TTS for Android/iOS
+      isSpeaking.value = true;
+      try {
+        await TextToSpeech.speak({
+          text: wordText,
+          lang: "en-US",
+          rate: 0.7, // Slower for Grade 1 students
+          pitch: 1.2, // Higher pitch for child-friendly voice
+          volume: 1.0,
+        });
+        console.log("🔊 Native TTS played:", wordText);
+      } catch (error) {
+        console.error("Native TTS error:", error);
+        // Fallback to Web Speech API
+        await speakWordWeb(wordText);
+      } finally {
+        isSpeaking.value = false;
+      }
+    } else {
+      // Use Web Speech API for web browsers
+      await speakWordWeb(wordText);
+    }
+  } catch (error) {
+    console.error("Text-to-Speech error:", error);
+    isSpeaking.value = false;
+  }
+};
+
+// Web Speech API fallback for browsers
+const speakWordWeb = async (wordText) => {
+  try {
     // Stop any currently speaking utterances
     window.speechSynthesis.cancel();
 
@@ -203,9 +239,8 @@ const speakWord = async (wordText) => {
     // Speak the word
     window.speechSynthesis.speak(utterance);
   } catch (error) {
-    console.error("Text-to-Speech error:", error);
-    // Fallback: show visual feedback
-    alert(`Speaking: ${wordText}`);
+    console.error("Web Speech API error:", error);
+    isSpeaking.value = false;
   }
 };
 
