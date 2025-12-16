@@ -1185,21 +1185,43 @@ const initWebSpeechFallback = async () => {
     if (!recognition) {
       recognition = new WebSpeechRecognition();
       recognition.lang = "en-US";
-      recognition.interimResults = false;
+      recognition.interimResults = true; // Enable interim results for better responsiveness
       recognition.continuous = false;
 
+      recognition.onstart = () => {
+        console.log("🎤 Web Speech Started");
+      };
+
       recognition.onresult = (event) => {
-        const transcript = event.results[0][0].transcript.trim();
-        console.log("🎤 Web Speech result:", transcript);
-        checkWord(transcript);
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          const transcript = result[0].transcript.toLowerCase().trim();
+          const isFinal = result.isFinal;
+
+          console.log(`🎤 Web Speech [${isFinal ? "FINAL" : "INTERIM"}]:`, transcript);
+
+          // Only process final results
+          if (isFinal) {
+            checkWord(transcript, true);
+          }
+        }
       };
 
       recognition.onerror = (event) => {
         console.error("⚠️ Web Speech Error:", event.error);
+        isListening.value = false;
       };
 
       recognition.onend = () => {
-        isListening.value = false;
+        console.log("🎤 Web Speech Ended");
+        // Auto-restart if still listening (for continuous recognition)
+        if (isListening.value) {
+          setTimeout(() => {
+            if (isListening.value) {
+              recognition.start();
+            }
+          }, 100);
+        }
       };
     }
 
@@ -2520,178 +2542,102 @@ const resetWordsStatus = () => {
 
 // 🎙️ Toggle mic (supports both online and offline)
 const toggleListening = async () => {
-  const platform = window.Capacitor.getPlatform();
+  console.log("🎤 toggleListening called, current system:", activeRecognitionSystem.value);
 
-  // Only check connection if we don't have a cached engine type or it's been a while
-  const isOnline = await checkConnection();
+  if (!speechSystemReady.value) {
+    console.log("⏳ Speech system not ready yet, please wait...");
+    return;
+  }
 
-  if (platform === "web") {
-    if (isOnline) {
-      // Online mode - use Web Speech API
-      const WebSpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (!WebSpeechRecognition) {
-        console.error("SpeechRecognition not supported.");
-        return;
-      }
-
-      if (!recognition) {
-        recognition = new WebSpeechRecognition();
-        recognition.lang = "en-PH"; // Filipino English for online
-        recognition.interimResults = true; // Enable interim results
-        recognition.continuous = false;
-
-        // Set engine type
-        unifiedSpeech.setEngine("webspeech");
-
-        // Set engine type
-        unifiedSpeech.setEngine("webspeech");
-
-        recognition.onstart = () => {
-          console.log("🎤 Web Speech Started");
-          unifiedSpeech.emitStart();
-        };
-
-        recognition.onresult = (event) => {
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const result = event.results[i];
-            const transcript = result[0].transcript.trim();
-            const isFinal = result.isFinal;
-
-            console.log(`🎤 Web Speech [${isFinal ? "FINAL" : "INTERIM"}]:`, transcript);
-
-            // Emit unified result event
-            unifiedSpeech.emitResult(transcript, isFinal);
-          }
-        };
-
-        recognition.onerror = (event) => {
-          unifiedSpeech.emitEngineError("WebSpeech", event.error, event.message || "");
-        };
-
-        recognition.onend = () => {
-          console.log("🎤 Web Speech Ended");
-          unifiedSpeech.emitEnd();
-        };
-
-        recognition.onspeechstart = () => {
-          unifiedSpeech.emitSpeechStart();
-        };
-
-        recognition.onspeechend = () => {
-          unifiedSpeech.emitSpeechEnd();
-        };
-      }
-
-      if (!isListening.value) {
-        recognition.start();
-        isListening.value = true;
-      } else {
-        recognition.stop();
-        isListening.value = false;
-      }
+  // Use native speech recognition if available
+  if (activeRecognitionSystem.value === "native") {
+    if (!isListening.value) {
+      isListening.value = true;
+      console.log("🎤 Starting native speech recognition loop...");
+      startNativeSpeechListening();
     } else {
-      // Offline mode - use Vosk
-      if (!recognizer) {
-        console.log("🔄 Vosk not initialized, initializing now...");
-        await initVoskFallback();
-      }
-
-      if (!recognizer) {
-        console.error("❌ Failed to initialize offline speech recognition");
-        return;
-      }
-
-      if (!isListening.value) {
-        listening.value = true;
-        isListening.value = true;
-        console.log("🎤 Started Vosk offline listening");
-        unifiedSpeech.emitStart();
-        unifiedSpeech.emitSpeechStart();
-      } else {
-        listening.value = false;
-        isListening.value = false;
-        console.log("🎤 Stopped Vosk offline listening");
-
-        // Try to get final result from Vosk before stopping
-        if (recognizer && recognizer.retrieveFinalResult) {
-          try {
-            const finalResult = recognizer.retrieveFinalResult();
-            console.log("🎤 Vosk final result on stop:", finalResult);
-            if (finalResult && finalResult.text && finalResult.text.trim()) {
-              const transcript = finalResult.text.trim();
-              console.log("🎤 Vosk Final Result (on stop):", transcript);
-              unifiedSpeech.emitResult(transcript, true);
-            }
-          } catch (error) {
-            console.error("🎤 Error retrieving final result:", error);
-          }
-        }
-
-        unifiedSpeech.emitEnd();
-        unifiedSpeech.emitSpeechEnd();
-      }
+      isListening.value = false;
+      console.log("🎤 Stopping native speech recognition...");
+      await SpeechRecognition.stop();
     }
-  } else {
-    // Native (Android/iOS with Capacitor plugin)
-    const hasPermission = await SpeechRecognition.hasPermission();
-    if (!hasPermission.value) {
-      const permission = await SpeechRecognition.requestPermission();
-      if (!permission.value) {
-        alert("Microphone permission denied.");
-        return;
-      }
-    }
+    return;
+  }
 
-    const isAvailable = await SpeechRecognition.available();
-    if (!isAvailable.value) {
-      alert("Speech Recognition not available on this device.");
+  // Web Speech API fallback
+  if (activeRecognitionSystem.value === "webspeech") {
+    if (!recognition) {
+      console.error("❌ Web Speech API not initialized");
       return;
     }
 
     if (!isListening.value) {
       isListening.value = true;
+      console.log("🎤 Starting Web Speech API...");
+      recognition.start();
+    } else {
+      isListening.value = false;
+      console.log("🎤 Stopping Web Speech API...");
+      recognition.stop();
+    }
+    return;
+  }
 
-      // Check permissions before starting
-      const permissionStatus = await SpeechRecognition.checkPermissions();
-      console.log("🎤 Permission status:", permissionStatus);
+  console.error("❌ No active recognition system available");
+};
 
-      if (permissionStatus.speechRecognition !== "granted") {
-        console.log("🎤 Requesting speech recognition permissions...");
-        const result = await SpeechRecognition.requestPermissions();
-        console.log("🎤 Permission request result:", result);
+// Start native speech recognition loop for Android/iOS
+const startNativeSpeechListening = async () => {
+  const listenLoop = async () => {
+    if (!isListening.value) {
+      console.log("🎤 Listen loop stopped");
+      return;
+    }
 
-        if (!result.granted) {
-          console.error("❌ Speech recognition permissions denied");
-          alert(
-            "Microphone permission is required for speech recognition. Please enable it in your device settings."
-          );
-          isListening.value = false;
-          return;
-        }
-      }
-
-      // Remove old listeners first
-      SpeechRecognition.removeAllListeners();
-
-      SpeechRecognition.addListener("speechRecognitionResult", (result) => {
-        console.log("Native Speech:", result.matches);
-        if (result.matches && result.matches.length > 0) {
-          checkWord(result.matches[0]);
-        }
-      });
-
-      await SpeechRecognition.start({
-        language: "en-US",
-        popup: true,
+    try {
+      console.log("🎤 Starting native recognition...");
+      const result = await SpeechRecognition.start({
+        language: 'en-US',
+        maxResults: 5,
+        prompt: 'Speak the word...',
+        popup: false,
         partialResults: false,
       });
-    } else {
-      await SpeechRecognition.stop();
-      isListening.value = false;
+
+      console.log("🎤 Native recognition result:", result);
+      console.log("🎤 Result type:", typeof result, "Keys:", Object.keys(result || {}));
+
+      // Handle different possible result structures from Capacitor plugin
+      let transcript = null;
+      if (result && result.matches && result.matches.length > 0) {
+        transcript = result.matches[0];
+      } else if (result && result.value && result.value.length > 0) {
+        transcript = result.value[0];
+      } else if (typeof result === 'string') {
+        transcript = result;
+      }
+
+      if (transcript) {
+        transcript = transcript.toLowerCase().trim();
+        console.log("🎤 Native speech recognized:", transcript);
+        await checkWord(transcript, true); // true = final result
+      } else {
+        console.log("⚠️ No matches in result:", result);
+      }
+
+      // Continue listening if still active
+      if (isListening.value) {
+        setTimeout(listenLoop, 100);
+      }
+    } catch (error) {
+      console.error("🎤 Native recognition error:", error);
+      if (isListening.value) {
+        // Retry after a short delay
+        setTimeout(listenLoop, 500);
+      }
     }
-  }
+  };
+
+  listenLoop();
 };
 
 // ✅ Reactive state

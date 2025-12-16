@@ -49,4 +49,15 @@ ion-app {
   --ion-safe-area-left: 0;
   --ion-safe-area-right: 0;
 }
+
+/* Force dropdown select visibility globally */
+select {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
+
+select option {
+  color: #000000 !important;
+  background-color: #ffffff !important;
+}
 </style>

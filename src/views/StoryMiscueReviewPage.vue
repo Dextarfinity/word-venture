@@ -512,32 +512,42 @@ const initWebSpeechAPI = () => {
 
     recognition = new WebSpeechRecognition();
     recognition.lang = "en-US";
-    recognition.interimResults = false;
+    recognition.interimResults = true;
     recognition.continuous = false;
 
-    recognition.onresult = (event) => {
-      const transcript = event.results[0][0].transcript.trim();
-      console.log("🎤 Heard:", transcript);
-      isProcessing.value = true;
+    recognition.onstart = () => {
+      console.log("🎤 Web Speech Started");
+    };
 
-      setTimeout(async () => {
-        await checkWord(transcript);
-        isProcessing.value = false;
-      }, 500);
+    recognition.onresult = (event) => {
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript.toLowerCase().trim();
+        const isFinal = result.isFinal;
+
+        console.log(`🎤 Web Speech [${isFinal ? "FINAL" : "INTERIM"}]:`, transcript);
+
+        // Only process final results
+        if (isFinal) {
+          checkWord(transcript);
+        }
+      }
     };
 
     recognition.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
+      console.error("⚠️ Web Speech Error:", event.error);
       isListening.value = false;
-      isProcessing.value = false;
     };
 
     recognition.onend = () => {
-      isListening.value = false;
-      if (isProcessing.value) {
+      console.log("🎤 Web Speech ended");
+      // Auto-restart if still listening
+      if (isListening.value) {
         setTimeout(() => {
-          isProcessing.value = false;
-        }, 1000);
+          if (isListening.value) {
+            recognition.start();
+          }
+        }, 100);
       }
     };
 
@@ -552,101 +562,107 @@ const initWebSpeechAPI = () => {
 
 // Toggle microphone
 const toggleListening = async () => {
+  console.log("🎤 toggleListening called, current system:", activeRecognitionSystem.value);
+
   if (isProcessing.value) {
-    console.log("Still processing previous input...");
+    console.log("⚠️ Still processing previous word, please wait...");
     return;
   }
 
-  if (!isListening.value) {
-    // Start listening
-    isListening.value = true;
+  if (!speechSystemReady.value) {
+    console.log("⏳ Speech system not ready yet, please wait...");
+    return;
+  }
 
-    if (isNativePlatform) {
-      // Use native Capacitor Speech Recognition
-      try {
-        // Check permissions before starting
-        const permissionStatus = await SpeechRecognition.checkPermissions();
-        console.log("🎤 Permission status:", permissionStatus);
-
-        if (permissionStatus.speechRecognition !== "granted") {
-          console.log("🎤 Requesting speech recognition permissions...");
-          const result = await SpeechRecognition.requestPermissions();
-          console.log("🎤 Permission request result:", result);
-
-          if (!result.granted) {
-            console.error("❌ Speech recognition permissions denied");
-            alert(
-              "Microphone permission is required for speech recognition. Please enable it in your device settings."
-            );
-            isListening.value = false;
-            return;
-          }
-        }
-
-        await SpeechRecognition.start({
-          language: "en-US",
-          maxResults: 1,
-          prompt: "Say the word",
-          partialResults: false,
-          popup: false,
-        });
-
-        SpeechRecognition.addListener("partialResults", (data) => {
-          console.log("🎤 Partial results:", data.matches);
-        });
-
-        SpeechRecognition.addListener("listeningState", (state) => {
-          console.log("🎤 Listening state:", state);
-          if (!state.listening) {
-            isListening.value = false;
-          }
-        });
-
-        const result = await new Promise((resolve, reject) => {
-          const timeout = setTimeout(() => {
-            reject(new Error("Timeout"));
-          }, 10000);
-
-          SpeechRecognition.addListener("finalResults", (data) => {
-            clearTimeout(timeout);
-            resolve(data);
-          });
-        });
-
-        if (result.matches && result.matches.length > 0) {
-          const transcript = result.matches[0].trim();
-          console.log("🎤 Native heard:", transcript);
-          isProcessing.value = true;
-
-          setTimeout(async () => {
-            await checkWord(transcript);
-            isProcessing.value = false;
-          }, 500);
-        }
-
-        isListening.value = false;
-      } catch (error) {
-        console.error("Native speech recognition error:", error);
-        alert("Failed to start speech recognition: " + error.message);
-        isListening.value = false;
-        isProcessing.value = false;
-      }
+  // Use native speech recognition if available
+  if (activeRecognitionSystem.value === "native") {
+    if (!isListening.value) {
+      isListening.value = true;
+      console.log("🎤 Starting native speech recognition loop...");
+      startNativeSpeechListening();
     } else {
-      // Use Web Speech API
-      if (!recognition) {
-        initSpeechRecognition();
-      }
-      recognition.start();
-    }
-  } else {
-    // Stop listening
-    isListening.value = false;
-    if (isNativePlatform) {
+      isListening.value = false;
+      console.log("🎤 Stopping native speech recognition...");
       await SpeechRecognition.stop();
+    }
+    return;
+  }
+
+  // Web Speech API fallback
+  if (activeRecognitionSystem.value === "webspeech") {
+    if (!recognition) {
+      console.error("❌ Web Speech API not initialized");
+      return;
+    }
+
+    if (!isListening.value) {
+      isListening.value = true;
+      console.log("🎤 Starting Web Speech API...");
+      recognition.start();
     } else {
+      isListening.value = false;
+      console.log("🎤 Stopping Web Speech API...");
       recognition.stop();
     }
+    return;
   }
+
+  console.error("❌ No active recognition system available");
+};
+
+// Start native speech recognition loop for Android/iOS
+const startNativeSpeechListening = async () => {
+  const listenLoop = async () => {
+    if (!isListening.value) {
+      console.log("🎤 Listen loop stopped");
+      return;
+    }
+
+    try {
+      console.log("🎤 Starting native recognition...");
+      const result = await SpeechRecognition.start({
+        language: 'en-US',
+        maxResults: 5,
+        prompt: 'Speak the word...',
+        popup: false,
+        partialResults: false,
+      });
+
+      console.log("🎤 Native recognition result:", result);
+      console.log("🎤 Result type:", typeof result, "Keys:", Object.keys(result || {}));
+
+      // Handle different possible result structures from Capacitor plugin
+      let transcript = null;
+      if (result && result.matches && result.matches.length > 0) {
+        transcript = result.matches[0];
+      } else if (result && result.value && result.value.length > 0) {
+        transcript = result.value[0];
+      } else if (typeof result === 'string') {
+        transcript = result;
+      }
+
+      if (transcript) {
+        transcript = transcript.toLowerCase().trim();
+        console.log("🎤 Native speech recognized:", transcript);
+        await checkWord(transcript);
+      } else {
+        console.log("⚠️ No matches in result:", result);
+      }
+
+      // Continue listening if still active
+      if (isListening.value) {
+        setTimeout(listenLoop, 100);
+      }
+    } catch (error) {
+      console.error("🎤 Native recognition error:", error);
+      if (isListening.value) {
+        // Retry after a short delay
+        setTimeout(listenLoop, 500);
+      }
+    }
+  };
+
+  listenLoop();
 };
 
 // Check spoken word

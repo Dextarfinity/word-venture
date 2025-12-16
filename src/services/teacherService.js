@@ -2070,6 +2070,423 @@ class TeacherService {
     }
   }
 
+  /**
+   * Get student's current reading level progress
+   * @param {string} studentId - Student's user ID
+   */
+  static async getStudentLevelProgress(studentId) {
+    try {
+      console.log('📊 Fetching student level progress for:', studentId);
+
+      // Get current reading level
+      const { data: userStats, error: statsError } = await supabase
+        .from('user_stats')
+        .select('current_reading_level')
+        .eq('user_id', studentId)
+        .single();
+
+      if (statsError) {
+        console.error('❌ Error fetching user stats:', statsError);
+        return { success: false, error: statsError.message };
+      }
+
+      const currentLevel = userStats?.current_reading_level || 1;
+
+      // Get phonics progress
+      const { data: phonicsProgress, error: phonicsError } = await supabase
+        .from('user_phonics_progress')
+        .select('*')
+        .eq('user_id', studentId)
+        .single();
+
+      if (phonicsError && phonicsError.code !== 'PGRST116') {
+        console.error('❌ Error fetching phonics progress:', phonicsError);
+      }
+
+      // Level requirements mapping
+      const levelRequirements = {
+        1: { name: 'Non-Reader', category: 'cvc', categoryLabel: 'CVC Words', wordsRequired: 150, nextLevel: 2, nextName: 'Frustration' },
+        2: { name: 'Frustration', category: 'phonics_merger', categoryLabel: 'Phonics Merger', wordsRequired: 150, nextLevel: 3, nextName: 'Instructional' },
+        3: { name: 'Instructional', category: 'blending', categoryLabel: 'Blending', wordsRequired: 300, nextLevel: 4, nextName: 'Independent' },
+        4: { name: 'Independent', category: 'silent', categoryLabel: 'Silent Words', wordsRequired: 300, nextLevel: null, nextName: null }
+      };
+
+      const currentLevelInfo = levelRequirements[currentLevel];
+      
+      // Get words read for current category
+      const categoryFieldMap = {
+        'cvc': 'cvc_words_read',
+        'phonics_merger': 'phonics_merger_words_read',
+        'blending': 'blending_words_read',
+        'silent': 'silent_letter_words_read'
+      };
+
+      const categoryField = categoryFieldMap[currentLevelInfo.category];
+      const wordsRead = phonicsProgress?.[categoryField] || 0;
+      const progressPercentage = currentLevelInfo.wordsRequired > 0 
+        ? Math.min(Math.round((wordsRead / currentLevelInfo.wordsRequired) * 100), 100)
+        : 0;
+
+      const levelProgress = {
+        currentLevel,
+        levelName: currentLevelInfo.name,
+        nextLevel: currentLevelInfo.nextLevel,
+        nextLevelName: currentLevelInfo.nextName,
+        category: currentLevelInfo.category,
+        categoryLabel: currentLevelInfo.categoryLabel,
+        wordsRequired: currentLevelInfo.wordsRequired,
+        wordsRead,
+        progressPercentage
+      };
+
+      console.log('✅ Level progress:', levelProgress);
+
+      return { success: true, data: levelProgress };
+    } catch (error) {
+      console.error('❌ Error in getStudentLevelProgress:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Add words read for a category and promote student if requirements are met
+   * @param {Object} params - Parameters
+   * @param {string} params.studentId - Student's user ID
+   * @param {string} params.teacherId - Teacher's user ID
+   * @param {string} params.category - Category to add words for
+   * @param {number} params.wordsToAdd - Number of words to add
+   * @param {number} params.currentLevel - Student's current reading level
+   */
+  static async addWordsAndPromoteStudent(params) {
+    try {
+      const { studentId, teacherId, category, wordsToAdd, currentLevel } = params;
+      
+      console.log('📝 Adding words and checking promotion:', params);
+
+      // Get current phonics progress
+      const { data: phonicsProgress, error: progressError } = await supabase
+        .from('user_phonics_progress')
+        .select('*')
+        .eq('user_id', studentId)
+        .single();
+
+      if (progressError && progressError.code !== 'PGRST116') {
+        console.error('❌ Error fetching phonics progress:', progressError);
+        return { success: false, error: progressError.message };
+      }
+
+      // Category field mapping
+      const categoryFieldMap = {
+        'cvc': 'cvc_words_read',
+        'phonics_merger': 'phonics_merger_words_read',
+        'blending': 'blending_words_read',
+        'silent': 'silent_letter_words_read'
+      };
+
+      const categoryField = categoryFieldMap[category];
+      const currentWordsRead = phonicsProgress?.[categoryField] || 0;
+      const newWordsRead = currentWordsRead + wordsToAdd;
+
+      // Update phonics progress
+      const updateData = {
+        [categoryField]: newWordsRead
+      };
+
+      let upsertError;
+      if (phonicsProgress) {
+        const { error } = await supabase
+          .from('user_phonics_progress')
+          .update(updateData)
+          .eq('user_id', studentId);
+        upsertError = error;
+      } else {
+        const { error } = await supabase
+          .from('user_phonics_progress')
+          .insert({
+            user_id: studentId,
+            ...updateData
+          });
+        upsertError = error;
+      }
+
+      if (upsertError) {
+        console.error('❌ Error updating phonics progress:', upsertError);
+        return { success: false, error: upsertError.message };
+      }
+
+      // Check if promotion is needed
+      const levelRequirements = {
+        1: { wordsRequired: 150, nextLevel: 2, nextName: 'Frustration' },
+        2: { wordsRequired: 150, nextLevel: 3, nextName: 'Instructional' },
+        3: { wordsRequired: 300, nextLevel: 4, nextName: 'Independent' },
+        4: { wordsRequired: 300, nextLevel: null, nextName: null }
+      };
+
+      const requirements = levelRequirements[currentLevel];
+      let promoted = false;
+      let newLevel = currentLevel;
+      let newLevelName = null;
+
+      if (requirements && newWordsRead >= requirements.wordsRequired && requirements.nextLevel) {
+        // Promote student
+        const { error: levelError } = await supabase
+          .from('user_stats')
+          .update({ 
+            current_reading_level: requirements.nextLevel,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', studentId);
+
+        if (levelError) {
+          console.error('❌ Error promoting student:', levelError);
+        } else {
+          promoted = true;
+          newLevel = requirements.nextLevel;
+          newLevelName = requirements.nextName;
+          console.log(`🎉 Student promoted to level ${newLevel}: ${newLevelName}`);
+        }
+      }
+
+      return { 
+        success: true, 
+        promoted, 
+        newLevel,
+        newLevelName,
+        wordsRead: newWordsRead
+      };
+    } catch (error) {
+      console.error('❌ Error in addWordsAndPromoteStudent:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get individual student performance analytics for a specific time period
+   * @param {Object} params - Parameters object
+   * @param {string} params.studentId - Student's user ID
+   * @param {string} params.classroomId - Classroom ID
+   * @param {string} params.teacherId - Teacher's user ID
+   * @param {string} params.period - Time period ('week' or 'month')
+   * @param {number} params.week - Week number (if period is 'week')
+   * @param {number} params.month - Month number 1-12 (if period is 'month')
+   * @param {number} params.year - Year
+   */
+  static async getStudentPerformanceAnalytics(params) {
+    try {
+      const { studentId, classroomId, teacherId, period, week, month, year } = params;
+      
+      console.log('📊 Fetching student performance analytics:', params);
+
+      // Verify student belongs to this classroom
+      const { data: enrollment, error: enrollmentError } = await supabase
+        .from('classroom_students')
+        .select('id')
+        .eq('classroom_id', classroomId)
+        .eq('student_id', studentId)
+        .eq('status', 'active')
+        .single();
+
+      if (enrollmentError || !enrollment) {
+        console.error('❌ Student not enrolled in classroom:', enrollmentError);
+        return { success: false, error: 'Student not found in classroom' };
+      }
+
+      // Calculate date range
+      let startDate, endDate;
+      
+      if (period === 'week') {
+        // Calculate start and end of the week
+        const firstDayOfYear = new Date(year, 0, 1);
+        const daysOffset = (week - 1) * 7;
+        startDate = new Date(firstDayOfYear);
+        startDate.setDate(firstDayOfYear.getDate() + daysOffset);
+        
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+      } else {
+        // Month-based range
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0); // Last day of the month
+      }
+
+      const startDateStr = startDate.toISOString();
+      const endDateStr = endDate.toISOString();
+      
+      console.log('📅 Date range:', { startDate: startDateStr, endDate: endDateStr });
+
+      // First, get all task assignments for this student in the classroom
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from('task_assignments')
+        .select(`
+          id,
+          task_id,
+          assigned_at,
+          due_date,
+          teacher_tasks!inner (
+            id,
+            classroom_id
+          )
+        `)
+        .eq('user_id', studentId)
+        .eq('teacher_tasks.classroom_id', classroomId);
+
+      if (assignmentsError) {
+        console.error('❌ Error fetching task assignments:', assignmentsError);
+        return { success: false, error: assignmentsError.message };
+      }
+
+      console.log(`✅ Found ${assignments?.length || 0} task assignments`);
+
+      if (!assignments || assignments.length === 0) {
+        // No data for this period
+        return {
+          success: true,
+          data: {
+            averageAccuracy: 0,
+            totalMiscuesPercentage: 0,
+            totalWordsRead: 0,
+            period,
+            startDate: startDateStr,
+            endDate: endDateStr,
+            attemptCount: 0
+          }
+        };
+      }
+
+      // Get assignment IDs to fetch progress data
+      const assignmentIds = assignments.map(a => a.id);
+
+      // Fetch student_task_progress for these assignments within the date range
+      const { data: progressData, error: progressError } = await supabase
+        .from('student_task_progress')
+        .select('*')
+        .in('assignment_id', assignmentIds)
+        .eq('status', 'completed')
+        .gte('submitted_at', startDateStr)
+        .lte('submitted_at', endDateStr);
+
+      if (progressError) {
+        console.warn('⚠️ Error fetching progress data:', progressError);
+      }
+
+      console.log(`✅ Found ${progressData?.length || 0} completed progress records in date range`);
+
+      if (!progressData || progressData.length === 0) {
+        // No completed tasks in this period
+        return {
+          success: true,
+          data: {
+            averageAccuracy: 0,
+            totalMiscuesPercentage: 0,
+            totalWordsRead: 0,
+            period,
+            startDate: startDateStr,
+            endDate: endDateStr,
+            attemptCount: 0
+          }
+        };
+      }
+
+      // Calculate analytics from progress data
+      let totalScore = 0;
+      let totalWordsRead = 0;
+      let attemptCount = progressData.length;
+
+      progressData.forEach(progress => {
+        // Calculate accuracy from percentage_score or score/max_score
+        if (progress.percentage_score !== null && progress.percentage_score !== undefined) {
+          totalScore += progress.percentage_score;
+        } else if (progress.score !== null && progress.max_score && progress.max_score > 0) {
+          totalScore += (progress.score / progress.max_score) * 100;
+        }
+      });
+
+      // Get task IDs to fetch word counts from stories
+      const taskIds = [...new Set(assignments.map(a => a.task_id))];
+      
+      // Fetch teacher_tasks to get content_id (story references)
+      const { data: tasks, error: tasksError } = await supabase
+        .from('teacher_tasks')
+        .select('id, category, subcategory')
+        .in('id', taskIds);
+
+      if (!tasksError && tasks) {
+        // For story-based tasks, try to get word counts
+        const storyTaskIds = tasks
+          .filter(t => t.category === 'story' || t.subcategory?.includes('story'))
+          .map(t => t.id);
+
+        if (storyTaskIds.length > 0) {
+          // Get story IDs from task assignments
+          const { data: storyAssignments } = await supabase
+            .from('teacher_tasks')
+            .select('id, subcategory')
+            .in('id', storyTaskIds);
+
+          // For each completed task, try to estimate words read
+          // If we have story data, use actual word count
+          // Otherwise use an estimate based on task type
+          const completedTaskIds = progressData.map(p => 
+            assignments.find(a => a.id === p.assignment_id)?.task_id
+          ).filter(Boolean);
+
+          // Use a reasonable estimate: average story has ~200 words
+          // For word tasks: ~50 words, for tests: ~100 words
+          completedTaskIds.forEach(taskId => {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) {
+              if (task.category === 'story') {
+                totalWordsRead += 200; // Average story length
+              } else if (task.category === 'word' || task.category === 'vocabulary') {
+                totalWordsRead += 50; // Word practice
+              } else if (task.category === 'test' || task.category === 'quiz') {
+                totalWordsRead += 100; // Test reading
+              } else {
+                totalWordsRead += 150; // Default estimate
+              }
+            }
+          });
+        } else {
+          // No story tasks, estimate based on completed tasks
+          totalWordsRead = attemptCount * 150; // Conservative estimate per task
+        }
+      } else {
+        // Fallback: estimate based on number of completed tasks
+        totalWordsRead = attemptCount * 150;
+      }
+
+      console.log(`📖 Estimated words read: ${totalWordsRead} for ${attemptCount} completed tasks`);
+
+      // Calculate averages and percentages
+      const averageAccuracy = attemptCount > 0 
+        ? Math.round(totalScore / attemptCount) 
+        : 0;
+
+      // Calculate miscues percentage
+      // Since we don't have miscues data in current schema, estimate from accuracy
+      const totalMiscuesPercentage = averageAccuracy > 0
+        ? Math.round(100 - averageAccuracy)
+        : 0;
+
+      const analytics = {
+        averageAccuracy,
+        totalMiscuesPercentage: Math.min(totalMiscuesPercentage, 100), // Cap at 100%
+        totalWordsRead,
+        period,
+        startDate: startDateStr,
+        endDate: endDateStr,
+        attemptCount
+      };
+
+      console.log('✅ Student analytics calculated:', analytics);
+
+      return { success: true, data: analytics };
+    } catch (error) {
+      console.error('❌ Error in getStudentPerformanceAnalytics:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
 }
 
 export { TeacherService }

@@ -1252,67 +1252,72 @@ const startReading = () => {
 
   nextTick(() => autoScrollToCurrent());
 
-  // Show user which mode is active
-  let mode = "Unknown mode";
+  // Use native speech recognition if available
   if (activeRecognitionSystem.value === 'native') {
-    mode = "Native Android speech recognition";
+    console.log("🎤 Starting native speech recognition");
     startNativeSpeechListening();
-  } else if (usingOffline.value) {
-    mode = "Vosk offline";
-  } else {
-    mode = "Web Speech API online";
+  } else if (activeRecognitionSystem.value === 'webspeech') {
+    console.log("🎤 Starting Web Speech API");
     if (recognition.value) {
       recognition.value.start();
     }
+  } else {
+    console.error("❌ No active recognition system available");
   }
-  console.log(`🎯 Starting reading with ${mode} mode`);
 };
 
 // Start native speech recognition for Android
 const startNativeSpeechListening = async () => {
-  try {
-    console.log("🎤 Starting native speech recognition...");
+  const listenLoop = async () => {
+    if (!listening.value) {
+      console.log("🎤 Listen loop stopped");
+      return;
+    }
     
-    // Continuously listen for speech
-    const listenLoop = async () => {
-      if (!listening.value) return;
-      
-      try {
-        const result = await SpeechRecognition.start({
-          language: 'fil-PH', // Filipino language
-          maxResults: 1,
-          prompt: 'Speak the word...',
-          showPopup: false, // Don't show the default popup
-        });
+    try {
+      console.log("🎤 Starting native recognition...");
+      const result = await SpeechRecognition.start({
+        language: 'en-US',
+        maxResults: 5,
+        prompt: 'Speak the word...',
+        popup: false,
+        partialResults: false,
+      });
 
-        if (result && result.value && result.value.length > 0) {
-          const transcript = result.value[0].toLowerCase().trim();
-          console.log("🎤 Native speech recognized:", transcript);
-          checkWord(transcript, true);
-        }
+      console.log("🎤 Native recognition result:", result);
 
-        // Continue listening for next word
-        if (listening.value) {
-          setTimeout(listenLoop, 500); // Small delay before next listen
-        }
-      } catch (error) {
-        // User might have cancelled or there was an error
-        if (listening.value && error.message !== 'No recognition result') {
-          console.log("🎤 Native speech listening continuing...");
-        }
-        
-        // Continue listening for next word after a delay
-        if (listening.value) {
-          setTimeout(listenLoop, 1000);
-        }
+      // Handle different possible result structures from Capacitor plugin
+      let transcript = null;
+      if (result && result.matches && result.matches.length > 0) {
+        transcript = result.matches[0];
+      } else if (result && result.value && result.value.length > 0) {
+        transcript = result.value[0];
+      } else if (typeof result === 'string') {
+        transcript = result;
       }
-    };
 
-    // Start the listen loop
-    listenLoop();
-  } catch (error) {
-    console.error("❌ Native speech listening failed:", error);
-  }
+      if (transcript) {
+        transcript = transcript.toLowerCase().trim();
+        console.log("🎤 Native speech recognized:", transcript);
+        await checkWord(transcript, true);
+      } else {
+        console.log("⚠️ No matches in result:", result);
+      }
+
+      // Continue listening if still active
+      if (listening.value) {
+        setTimeout(listenLoop, 100);
+      }
+    } catch (error) {
+      console.error("🎤 Native recognition error:", error);
+      if (listening.value) {
+        // Retry after a short delay
+        setTimeout(listenLoop, 500);
+      }
+    }
+  };
+
+  listenLoop();
 };
 
 const stopReading = () => {
